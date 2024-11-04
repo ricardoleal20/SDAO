@@ -6,13 +6,27 @@ use rand_distr::Normal;
 use rayon::prelude::*;
 // Local imports
 use super::particle::Particle;
-use crate::enums::RunStatus;
+use crate::enums::Status;
 
-//
+// * Equivalent for the user input vs the algorithm parameters
 // learning_rate = alpha
 // memory_coeff = gamma
 // decay_rate = beta
 
+/// Create a SDAO instance with the provided parameters.
+///
+/// **Arguments**:
+///     - num_particles: Number of particles to use.
+///     - dimension: Dimension of the search space.
+///     - learning_rate: Learning rate of the algorithm.
+///     - memory_coeff: Memory coefficient of the algorithm.
+///     - diffusion_coeff: Diffusion coefficient of the algorithm.
+///     - decay_rate: Decay rate of the algorithm.
+///     - max_iterations: Maximum number of iterations.
+///     - objective_fn: Objective function to optimize.
+///     - threshold: Threshold to consider the algorithm has converged. Default to 1e-6.
+///     - num_threads: Number of threads to use. Default to 1.
+///     - verbose: Whether to print information during the run. Default to false.
 #[derive(Debug)]
 pub struct SDAO {
     particles: Vec<Particle>,
@@ -78,7 +92,7 @@ impl SDAO {
                 // Get the position of the particle in the search space. This position
                 // is going to be a random place in the search space.
                 let position = Array1::from_iter((0..dimension).map(|_| uniform.sample(&mut rng)));
-                let value = 0.0; // The value is 0.0 since it's the one we want.
+                let value = 50.0; // The value is 0.0 since it's the one we want.
                 Particle {
                     position: position.clone(), // This clone is necessary to avoid borrowing the position
                     best_position: position,
@@ -104,8 +118,21 @@ impl SDAO {
     /// Run the SDAO algorithm.
     ///
     /// Returns:
-    ///     - RunStatus: Enum indicating the result of the run.
-    pub fn run(&mut self) -> (RunStatus, Option<Particle>) {
+    ///     - Status: Enum indicating the result of the run.
+    ///     - Option<Particle>: The best particle found if any.
+    pub fn run(&mut self) -> (Status, Option<Particle>) {
+        if self.verbose {
+            println!("Starting the optimization...");
+            println!("* =================================== *");
+            println!("Number of particles: {}", self.particles.len());
+            println!("Number of dimensions: {}", self.particles[0].position.len());
+            println!("Learning rate: {}", self.alpha);
+            println!("Memory coefficient: {}", self.gamma);
+            println!("Diffusion coefficient: {}", self.diffusion_coeff);
+            println!("Decay rate: {}", self.beta);
+            println!("Maximum number of iterations: {}", self.max_iterations);
+            println!("* =================================== *");
+        }
         // Initialize the flag for the optimal and the feasible solution
         let mut optimal_found = false;
         let mut feasible_solution: Option<Particle> = None;
@@ -164,20 +191,20 @@ impl SDAO {
             // Log the model information if the verbose flag is set
             if self.verbose && k % 10 == 0 {
                 if let Some(best) = self.get_best_particle_opt() {
-                    println!("Iteration {}: Best value = {}", k + 1, best.best_value);
+                    println!("[Iter={},T=]: {}", k + 1, best.best_value);
                 }
             }
         }
 
         if optimal_found {
-            (RunStatus::Optimal, feasible_solution)
+            (Status::Optimal, feasible_solution)
         } else {
             // Determine if a feasible solution was found
             let best = self.get_best_particle_opt();
             if let Some(best_particle) = best {
-                (RunStatus::Feasible, Some(best_particle.clone()))
+                (Status::Feasible, Some(best_particle.clone()))
             } else {
-                (RunStatus::Infeasible, None)
+                (Status::Infeasible, None)
             }
         }
     }
@@ -214,15 +241,18 @@ impl SDAO {
         let mut gradient = Array1::<f64>::zeros(position.len());
 
         for i in 0..position.len() {
+            // Get the previous and next position reference. Then, increment and decrement the
+            // positions by the finite step.
             let mut pos_plus = position.clone();
             let mut pos_minus = position.clone();
             pos_plus[i] += h;
             pos_minus[i] -= h;
+            // Evaluate the objective function in the new positions
             let f_plus = (self.objective_fn)(&pos_plus);
             let f_minus = (self.objective_fn)(&pos_minus);
+            // Calculate the gradient using the finite differences
             gradient[i] = (f_plus - f_minus) / (2.0 * h);
         }
-
         gradient
     }
 }
