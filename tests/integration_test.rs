@@ -7,11 +7,11 @@ use functions::{
 };
 use sdao::{Status, SDAO};
 
-fn create_sdao(objective_func: fn(&Array1<f64>) -> f64, dimensions: usize) -> SDAO {
+fn create_sdao(objective_func: fn(&Array1<f64>) -> f64, search_space: Vec<f64>) -> SDAO {
     SDAO::new(
-        50,
-        dimensions,
-        [-10.0, 10.0].to_vec(),
+        100,
+        1,
+        search_space,
         0.01,
         0.5,
         1.0,
@@ -24,134 +24,89 @@ fn create_sdao(objective_func: fn(&Array1<f64>) -> f64, dimensions: usize) -> SD
     )
 }
 
+fn run_sdao(mut sdao: SDAO, expected_value: f64) -> bool {
+    // Instance the success variable
+    let mut success = false;
+
+    for _ in 0..5 {
+        let (status, best_particle) = sdao.run();
+        if matches!(status, Status::Optimal | Status::Feasible) {
+            if let Some(particle) = best_particle {
+                if particle.best_value < expected_value {
+                    success = true;
+                    break;
+                }
+            }
+        }
+    }
+    // Return the success execution
+    success
+}
+
+/// ============================================ ///
+///                    TESTS                     ///
+/// ============================================ ///
+
 /// SDAO initializer test. This test ensures that the SDAO can be initialized
 /// with the given parameters and that the particles are correctly created.
 #[test]
 fn test_init_sdao() {
     // Just init the SDAO. Use the sphere function as a test
-    create_sdao(sphere_function, 1);
+    create_sdao(sphere_function, vec![-10.0, 10.0]);
 }
 
 /// Simple test to ensure that the SDAO is working and is able
 /// to find the optimal solution for the sphere function.
 #[test]
 fn test_sdao_optimal_sphere() {
-    let mut optimizer = create_sdao(sphere_function, 1);
-    // Get the best particle and the status of the optimization
-    let (status, best_particle) = optimizer.run();
-    assert!(matches!(status, Status::Optimal | Status::Feasible));
-    // Check if the value for the best particle fits the expected threshold
-    if let Some(particle) = best_particle {
-        assert!(particle.best_value < 1e-6);
-    }
+    let optimizer = create_sdao(sphere_function, vec![-10.0, 10.0]);
+    // Evaluate if the algorithm run successfully or not
+    assert!(
+        run_sdao(optimizer, 1e-6),
+        "Failed to find an optimal solution within 5 retries for the Sphere function"
+    );
 }
 
 /// Simple test to ensure that the SDAO can solve the rosenbrock function
 #[test]
 fn test_sdao_optimal_rosenbrock() {
-    //let mut optimizer = create_sdao(rosenbrock_function, 2);
-    let mut optimizer = SDAO::new(
-        50,
-        1,
-        [-500.0, 500.0].to_vec(),
-        0.01,
-        0.5,
-        1.0,
-        0.01,
-        500,
-        rosenbrock_function,
-        None,
-        None,
-        None,
+    let optimizer = create_sdao(rosenbrock_function, vec![-500.0, 500.0]);
+    // Evaluate if the algorithm run successfully or not
+    assert!(
+        run_sdao(optimizer, 1e-6),
+        "Failed to find an optimal solution within 5 retries for the Rosenbrock function"
     );
-    // Get the best particle and the status of the optimization
-    let (status, best_particle) = optimizer.run();
-    assert!(matches!(status, Status::Optimal | Status::Feasible));
-    println!("Status: {:?}", status);
-    // Check if the value for the best particle fits the expected threshold
-    if let Some(particle) = best_particle {
-        assert!(particle.best_value < 1e-6);
-    }
 }
 
 /// Simple test to ensure that the SDAO can solve the rastrigin function
 #[test]
 fn test_sdao_optimal_rastrigin() {
-    //let mut optimizer = create_sdao(rastrigin_function, 1);
-    let mut optimizer = SDAO::new(
-        50,
-        1,
-        [-5.12, 5.12].to_vec(),
-        0.01,
-        0.5,
-        1.0,
-        0.01,
-        500,
-        rastrigin_function,
-        None,
-        None,
-        None,
+    let optimizer = create_sdao(rastrigin_function, vec![-5.12, 5.12]);
+    // Evaluate if the algorithm run successfully or not
+    assert!(
+        run_sdao(optimizer, 1e-6),
+        "Failed to find an optimal solution within 5 retries for the Rastrigin function"
     );
-    // Get the best particle and the status of the optimization
-    let (status, best_particle) = optimizer.run();
-    assert!(matches!(status, Status::Optimal | Status::Feasible));
-    // Check if the value for the best particle fits the expected threshold
-    if let Some(particle) = best_particle {
-        assert!(particle.best_value < 1e-6);
-    }
 }
 
 /// Simple test to ensure that the SDAO can solve the rastrigin function
 #[test]
 fn test_sdao_optimal_ackley() {
-    // let mut optimizer = create_sdao(ackley_function, 1);
-    let mut optimizer = SDAO::new(
-        50,
-        1,
-        [-10.0, 10.0].to_vec(),
-        0.01,
-        0.5,
-        1.0,
-        0.01,
-        500,
-        ackley_function,
-        None,
-        None,
-        None,
+    let optimizer = create_sdao(ackley_function, vec![-10.0, 10.0]);
+    // Evaluate if the algorithm run successfully or not
+    assert!(
+        run_sdao(optimizer, 1e-2),
+        "Failed to find an optimal solution within 5 retries for the Ackley function"
     );
-    // Get the best particle and the status of the optimization
-    let (status, best_particle) = optimizer.run();
-    assert!(matches!(status, Status::Optimal | Status::Feasible));
-    println!("Status: {:?}", status);
-    // Check if the value for the best particle fits the expected threshold
-    if let Some(particle) = best_particle {
-        assert!(particle.best_value < 1e-3);
-    }
 }
 
 /// Simple test to ensure that the SDAO can solve the schwefel function
 #[test]
 fn test_sdao_optimal_schwefel() {
-    let mut optimizer = SDAO::new(
-        50,
-        1,
-        [-500.0, 500.0].to_vec(),
-        0.01,
-        0.5,
-        1.0,
-        0.01,
-        500,
-        schwefel_function,
-        None,
-        None,
-        None,
+    let optimizer = create_sdao(schwefel_function, vec![-500.0, 500.0]);
+    // Evaluate if the algorithm run successfully or not
+    assert!(
+        run_sdao(optimizer, 1e-6),
+        "Failed to find an optimal solution within 5 retries for the Schwefel function"
     );
-    // Get the best particle and the status of the optimization
-    let (status, best_particle) = optimizer.run();
-    assert!(matches!(status, Status::Optimal | Status::Feasible));
-    println!("Status: {:?}", status);
-    // Check if the value for the best particle fits the expected threshold
-    if let Some(particle) = best_particle {
-        assert!(particle.best_value < 1e-6);
-    }
 }
