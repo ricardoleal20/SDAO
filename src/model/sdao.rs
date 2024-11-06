@@ -131,6 +131,9 @@ impl SDAO {
     ///     - Status: Enum indicating the result of the run.
     ///     - Option<Particle>: The best particle found if any.
     pub fn run(&mut self) -> (Status, Option<Particle>) {
+        // Initialize the start time to calculate the time that we take.
+        let start_time = std::time::Instant::now();
+
         if self.verbose {
             println!("Starting the optimization...");
             println!("* =================================== *");
@@ -195,8 +198,9 @@ impl SDAO {
                 if self.verbose {
                     if let Some(best_particle) = feasible_solution.clone() {
                         println!(
-                            "Optimal solution || Stats: [Iter={}, T=s, Value={}]",
+                            "Optimal solution || Stats: [Iter={}, T={}s, Value={}]",
                             k + 1,
+                            start_time.elapsed().as_secs(),
                             best_particle.best_value
                         );
                     }
@@ -207,7 +211,12 @@ impl SDAO {
             // Log the model information if the verbose flag is set
             if self.verbose && k % 50 == 0 {
                 if let Some(best) = self.get_best_particle_opt() {
-                    println!("[Iter={},T=s]: {}", k + 1, best.best_value);
+                    println!(
+                        "[Iter={},T={}s]: {}",
+                        k + 1,
+                        start_time.elapsed().as_secs(),
+                        best.best_value
+                    );
                 }
             }
         }
@@ -220,15 +229,18 @@ impl SDAO {
             if let Some(best_particle) = best {
                 // Print the message of the optimal
                 println!(
-                    "Feasible solution || Stats: [Iter={}, T=s, Value={}]",
-                    self.max_iterations, best_particle.best_value
+                    "Feasible solution || Stats: [Iter={}, T={}s, Value={}]",
+                    self.max_iterations,
+                    start_time.elapsed().as_secs(),
+                    best_particle.best_value
                 );
                 (Status::Feasible, Some(best_particle.clone()))
             } else {
                 // Print the message of the optimal
                 println!(
-                    "Infeasible solution || Stats: [Iter={}, T=s, Value=None]",
-                    self.max_iterations
+                    "Infeasible solution || Stats: [Iter={}, T={}s, Value=None]",
+                    self.max_iterations,
+                    start_time.elapsed().as_secs()
                 );
                 (Status::Infeasible, None)
             }
