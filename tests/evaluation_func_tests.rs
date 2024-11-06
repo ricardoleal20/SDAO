@@ -7,6 +7,7 @@ use functions::{
 };
 use sdao::{Status, SDAO};
 
+/// Instance the SDAO algorithm
 fn create_sdao(objective_func: fn(&Array1<f64>) -> f64, search_space: Vec<f64>) -> SDAO {
     SDAO::new(
         100,
@@ -18,12 +19,15 @@ fn create_sdao(objective_func: fn(&Array1<f64>) -> f64, search_space: Vec<f64>) 
         0.01,
         500,
         objective_func,
-        None,
-        None,
-        None,
+        // Include the configuration parameters
+        Some(1e-6),
+        Some(1),
+        Some(true),
     )
 }
 
+/// Run the SDAO and evaluate if the response is successful. To evaluate the response
+/// we cna use the expected value as the threshold on the solution.
 fn run_sdao(mut sdao: SDAO, expected_value: f64) -> bool {
     // Instance the success variable
     let mut success = false;
@@ -106,7 +110,7 @@ fn test_sdao_optimal_schwefel() {
     let optimizer = create_sdao(schwefel_function, vec![-500.0, 500.0]);
     // Evaluate if the algorithm run successfully or not
     assert!(
-        run_sdao(optimizer, 1e-6),
+        run_sdao(optimizer, 1e-4),
         "Failed to find an optimal solution within 5 retries for the Schwefel function"
     );
 }

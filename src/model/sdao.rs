@@ -4,9 +4,13 @@ use ndarray::Array1;
 use rand::distributions::{Distribution, Uniform};
 use rand_distr::Normal;
 use rayon::prelude::*;
+use std::sync::Once;
 // Local imports
 use super::particle::Particle;
 use crate::enums::Status;
+
+// To only initialize the global thread pool 1 time
+static INIT: Once = Once::new();
 
 // * Equivalent for the user input vs the algorithm parameters
 // learning_rate = alpha
@@ -59,13 +63,14 @@ impl SDAO {
     pub fn new(
         num_particles: usize,
         dimension: usize,
+        search_space: Vec<f64>,
         learning_rate: f64,
         memory_coeff: f64,
         diffusion_coeff: f64,
         decay_rate: f64,
         max_iterations: usize,
         objective_fn: fn(&Array1<f64>) -> f64,
-        // Optional parameters
+        // Optional parameters with default values
         threshold: Option<f64>,
         num_threads: Option<usize>,
         verbose: Option<bool>,
@@ -75,15 +80,20 @@ impl SDAO {
         let num_threads = num_threads.unwrap_or(1);
         let threshold = threshold.unwrap_or(1e-6);
 
-        // * Configure Rayon to utiliz the specified thread numbers. By default is 1
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build_global()
-            .unwrap();
+        // * Configure Rayon to use the specified thread numbers. By default is 1
+        if num_threads > 1 {
+            INIT.call_once(|| {
+                rayon::ThreadPoolBuilder::new()
+                    .num_threads(num_threads)
+                    .build_global()
+                    .unwrap();
+            });
+        }
 
         // Initialize the random number generator
         let mut rng = rand::thread_rng();
-        let uniform = Uniform::new(-10.0, 10.0); // Search range
+        // let uniform = Uniform::new(-10.0, 10.0); // Search range
+        let uniform = Uniform::new(search_space[0], search_space[1]);
 
         // Initialize the number of particles randomly. Depending on which particles we do want to use
         // we'll create a new particle with a random position and a value of 0.
@@ -92,7 +102,7 @@ impl SDAO {
                 // Get the position of the particle in the search space. This position
                 // is going to be a random place in the search space.
                 let position = Array1::from_iter((0..dimension).map(|_| uniform.sample(&mut rng)));
-                let value = 50.0; // The value is 0.0 since it's the one we want.
+                let value = objective_fn(&position); // The value is 0.0 since it's the one we want.
                 Particle {
                     position: position.clone(), // This clone is necessary to avoid borrowing the position
                     best_position: position,
@@ -183,15 +193,21 @@ impl SDAO {
                 optimal_found = true;
                 feasible_solution = Some(self.get_best_particle());
                 if self.verbose {
-                    println!("Optimal found in iteration {}", k + 1);
+                    if let Some(best_particle) = feasible_solution.clone() {
+                        println!(
+                            "Optimal solution || Stats: [Iter={}, T=s, Value={}]",
+                            k + 1,
+                            best_particle.best_value
+                        );
+                    }
                 }
                 break;
             }
 
             // Log the model information if the verbose flag is set
-            if self.verbose && k % 10 == 0 {
+            if self.verbose && k % 50 == 0 {
                 if let Some(best) = self.get_best_particle_opt() {
-                    println!("[Iter={},T=]: {}", k + 1, best.best_value);
+                    println!("[Iter={},T=s]: {}", k + 1, best.best_value);
                 }
             }
         }
@@ -202,8 +218,18 @@ impl SDAO {
             // Determine if a feasible solution was found
             let best = self.get_best_particle_opt();
             if let Some(best_particle) = best {
+                // Print the message of the optimal
+                println!(
+                    "Feasible solution || Stats: [Iter={}, T=s, Value={}]",
+                    self.max_iterations, best_particle.best_value
+                );
                 (Status::Feasible, Some(best_particle.clone()))
             } else {
+                // Print the message of the optimal
+                println!(
+                    "Infeasible solution || Stats: [Iter={}, T=s, Value=None]",
+                    self.max_iterations
+                );
                 (Status::Infeasible, None)
             }
         }
@@ -211,9 +237,23 @@ impl SDAO {
 
     /// Check if the optimum has been found (depends on the definition of the optimum).
     fn check_optimality(&self) -> bool {
-        // This method is to evaluate if any particles had a value below the threshold.
-        // If it has, then we can say that the optimal has been found.
-        self.particles.iter().any(|p| p.best_value < self.threshold)
+        // For the optimality, I'll use the norm of the gradient for the best particle
+        let best_particle = self.get_best_particle_opt();
+        if let Some(particle) = best_particle {
+            // Check the gradient for the best position
+            let gradient = self.calculate_gradient(&particle.best_position);
+
+            // Then, calculate the norm of the gradient
+            let norm = gradient.mapv(|x| x.powi(2)).sum().sqrt();
+            if norm < self.threshold {
+                return true;
+            }
+            // If the norm is not lower than the threshold...
+            return false;
+        } else {
+            // If we cannot find an optimal
+            return false;
+        }
     }
 
     /// Obtiene la mejor partícula encontrada
