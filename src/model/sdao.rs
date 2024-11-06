@@ -227,21 +227,25 @@ impl SDAO {
             // Determine if a feasible solution was found
             let best = self.get_best_particle_opt();
             if let Some(best_particle) = best {
-                // Print the message of the optimal
-                println!(
-                    "Feasible solution || Stats: [Iter={}, T={}s, Value={}]",
-                    self.max_iterations,
-                    start_time.elapsed().as_secs(),
-                    best_particle.best_value
-                );
+                // Print the message of the feasible solution
+                if self.verbose {
+                    println!(
+                        "Feasible solution || Stats: [Iter={}, T={}s, Value={}]",
+                        self.max_iterations,
+                        start_time.elapsed().as_secs(),
+                        best_particle.best_value
+                    );
+                }
                 (Status::Feasible, Some(best_particle.clone()))
             } else {
-                // Print the message of the optimal
-                println!(
-                    "Infeasible solution || Stats: [Iter={}, T={}s, Value=None]",
-                    self.max_iterations,
-                    start_time.elapsed().as_secs()
-                );
+                // Print the message of the infeasible solution
+                if self.verbose {
+                    println!(
+                        "Infeasible solution || Stats: [Iter={}, T={}s, Value=None]",
+                        self.max_iterations,
+                        start_time.elapsed().as_secs()
+                    );
+                }
                 (Status::Infeasible, None)
             }
         }
