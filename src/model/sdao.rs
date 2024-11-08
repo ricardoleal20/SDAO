@@ -43,6 +43,10 @@ pub struct SDAO {
     // num_threads: usize,
     threshold: f64,
     verbose: bool,
+    // * NOTE: These parameterrs are not used in the algorithm
+    // * but they are used to measure some parameters of the algorithm
+    pub execution_time: f64,
+    pub used_iterations: usize,
 }
 
 impl SDAO {
@@ -122,6 +126,10 @@ impl SDAO {
             objective_fn,
             threshold,
             verbose,
+            // Just initialize these parameters. These are only to measure
+            // the performance of the algorithm.
+            execution_time: 0.0,
+            used_iterations: 0,
         }
     }
 
@@ -149,6 +157,10 @@ impl SDAO {
         // Initialize the flag for the optimal and the feasible solution
         let mut optimal_found = false;
         let mut feasible_solution: Option<Particle> = None;
+
+        // Initialize the used iterations variable
+        let mut used_iterations: usize = self.max_iterations;
+        let mut executed_time: f64 = 0.0;
 
         for k in 0..self.max_iterations {
             // Process each particle in parallel
@@ -195,13 +207,15 @@ impl SDAO {
             if self.check_optimality() {
                 optimal_found = true;
                 feasible_solution = Some(self.get_best_particle());
+                // Get the used time and the needed iterations
+                executed_time = start_time.elapsed().as_secs_f64();
+                used_iterations = k;
+
                 if self.verbose {
                     if let Some(best_particle) = feasible_solution.clone() {
                         println!(
                             "Optimal solution || Stats: [Iter={}, T={}s, Value={}]",
-                            k + 1,
-                            start_time.elapsed().as_secs(),
-                            best_particle.best_value
+                            k, executed_time, best_particle.best_value
                         );
                     }
                 }
@@ -213,12 +227,22 @@ impl SDAO {
                 if let Some(best) = self.get_best_particle_opt() {
                     println!(
                         "[Iter={},T={}s]: {}",
-                        k + 1,
+                        k,
                         start_time.elapsed().as_secs(),
                         best.best_value
                     );
                 }
             }
+        }
+
+        // Update the time and the iterations used on the public parameters
+        self.execution_time = executed_time;
+        if used_iterations < self.max_iterations {
+            // If we didn't reach the maximum iterations...
+            self.used_iterations = used_iterations;
+        } else {
+            // If we reach the maximum iterations...
+            self.used_iterations = self.max_iterations;
         }
 
         if optimal_found {
@@ -272,7 +296,6 @@ impl SDAO {
         }
     }
 
-    /// Obtiene la mejor partícula encontrada
     /// Obtain the best particle found.
     /// This is done by getting the particle with the lowest value.
     fn get_best_particle(&self) -> Particle {
