@@ -2,7 +2,7 @@
 use argparse::{ArgumentParser, StoreTrue};
 // Local imports
 mod benchmarks;
-use benchmarks::{sensitibility_benchmarks, single_test_benchmark};
+use benchmarks::{compare_algorithms_benchmark, sensitibility_benchmarks, single_test_benchmark};
 
 // Main function. Works for three different things:
 //
@@ -58,7 +58,7 @@ fn main() {
     } else if compare {
         println!("Running comparison against algorithms...");
         // Run the comparison
-        // compare_benchmarks();
+        compare_algorithms_benchmark();
     } else {
         println!("No benchmark selected. Please select one of the following options:");
         println!("\t-s, --sensitivity\tRun the sensitivity analysis");
