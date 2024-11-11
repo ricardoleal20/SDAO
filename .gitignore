@@ -23,3 +23,5 @@ Cargo.lock
 # Extra ignores
 .DS_STORE
 *.json
+results/
+*.csv
