@@ -1,0 +1,20 @@
+[package]
+name = "sdao"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# For the numerical approach
+ndarray = "0.15"
+rand = "0.8"
+rayon = "1.5"
+num = "0.4.3"
+# For the serialization approach
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# For the Python inteface 
+pyo3 = { version = "0.17", features = ["extension-module"] }
+rand_distr = "0.4.3"
+
+[dev-dependencies]
+itertools = "0.13.0"
