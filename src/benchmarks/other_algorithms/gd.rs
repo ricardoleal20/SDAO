@@ -5,6 +5,7 @@
 /// the direction of steepest descent as defined by the
 /// negative of the gradient.
 ///
+/// DOI: https://doi.org/10.48550/arXiv.1609.04747
 use ndarray::Array1;
 use rand::Rng;
 

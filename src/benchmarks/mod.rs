@@ -1,6 +1,7 @@
 // External crates imports
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
+use sysinfo::System;
 // Import the benchmarks functions and utilities
 mod benchmark_utils;
 mod functions;
@@ -205,6 +206,8 @@ pub fn compare_algorithms_benchmark() {
         ("Ackley", ackley_function, vec![-32.768, 32.768]),
         ("Schwefel", schwefel_function, vec![-500.0, 500.0]),
     ];
+    // Initialize the system info object
+    let mut system = System::new_all();
 
     // * SDAO
     // Define the default values for the SDAO.
@@ -218,9 +221,13 @@ pub fn compare_algorithms_benchmark() {
     println!("Running the SDAO algorithm for the functions...");
     print!("");
     for (func_name, func, range_values) in benchmark_functions.iter() {
-        let mut results: Vec<(f64, usize, f64)> = Vec::new();
+        let mut results: Vec<(f64, u64, f64)> = Vec::new();
         // Run the experiments
         for _ in 0..repetitions {
+            // Record initial memory usage
+            system.refresh_memory();
+            let initial_memory = system.used_memory();
+
             // Set the optimizer
             let mut optimizer = SDAO::new(
                 num_particles_value,
@@ -239,10 +246,16 @@ pub fn compare_algorithms_benchmark() {
             );
             // Using the optimizer, run it and get the result
             let result = optimizer.run();
-            let iterations = optimizer.used_iterations;
+
+            // Record final memory usage
+            system.refresh_memory();
+            let final_memory = system.used_memory();
+            let memory_used = final_memory.saturating_sub(initial_memory) / 1000; // Memory used during the algorithm (in KB)
+
+            let _iterations = optimizer.used_iterations;
             let time = optimizer.execution_time;
             if let Some(best_particle) = result.1 {
-                results.push((best_particle.best_value, iterations, time));
+                results.push((best_particle.best_value, memory_used, time));
             }
         }
         // Get the mean values and print them
@@ -254,19 +267,27 @@ pub fn compare_algorithms_benchmark() {
     println!("Running the FLA algorithm for the functions...");
     print!("");
     for (func_name, func, range_values) in benchmark_functions.iter() {
-        let mut results: Vec<(f64, usize, f64)> = Vec::new();
+        let mut results: Vec<(f64, u64, f64)> = Vec::new();
         // Run the experiments
         for _ in 0..repetitions {
-            let (best_value, iterations, time) = fick_law_algorithm(
+            // Record initial memory usage
+            system.refresh_memory();
+            let initial_memory = system.used_memory();
+
+            let (best_value, _, time) = fick_law_algorithm(
                 num_particles_value,
                 max_iterations,
                 diff_value,
                 range_values.clone(),
                 *func,
             );
+            // Record final memory usage
+            system.refresh_memory();
+            let final_memory = system.used_memory();
+            let memory_used = final_memory.saturating_sub(initial_memory) / 1000; // Memory used during the algorithm (in KB)
 
             // At the end, push the results
-            results.push((best_value, iterations as usize, time));
+            results.push((best_value, memory_used, time));
         }
         // Get the mean values and print them
         calculate_mean_values(func_name, results);
@@ -278,13 +299,21 @@ pub fn compare_algorithms_benchmark() {
     println!("Running the SA algorithm for the functions...");
     print!("");
     for (func_name, func, range_values) in benchmark_functions.iter() {
-        let mut results: Vec<(f64, usize, f64)> = Vec::new();
+        let mut results: Vec<(f64, u64, f64)> = Vec::new();
         // Run the experiments
         for _ in 0..repetitions {
-            let (best_value, iterations, time) = simulated_annealing(range_values.clone(), *func);
+            // Record initial memory usage
+            system.refresh_memory();
+            let initial_memory = system.used_memory();
+
+            let (best_value, _, time) = simulated_annealing(range_values.clone(), *func);
+            // Record final memory usage
+            system.refresh_memory();
+            let final_memory = system.used_memory();
+            let memory_used = final_memory.saturating_sub(initial_memory) / 1000; // Memory used during the algorithm (in KB)
 
             // At the end, push the results
-            results.push((best_value, iterations as usize, time));
+            results.push((best_value, memory_used, time));
         }
         // Get the mean values and print them
         calculate_mean_values(func_name, results);
@@ -294,41 +323,52 @@ pub fn compare_algorithms_benchmark() {
     println!("Running the GD algorithm for the functions...");
     print!("");
     for (func_name, func, range_values) in benchmark_functions.iter() {
-        let mut results: Vec<(f64, usize, f64)> = Vec::new();
+        let mut results: Vec<(f64, u64, f64)> = Vec::new();
         // Run the experiments
         for _ in 0..repetitions {
-            let (best_value, iterations, time) =
+            // Record initial memory usage
+            system.refresh_memory();
+            let initial_memory = system.used_memory();
+
+            let (best_value, _, time) =
                 gradient_descent(range_values.clone(), alpha_value, max_iterations, *func);
+            // Record final memory usage
+            system.refresh_memory();
+            let final_memory = system.used_memory();
+            let memory_used = final_memory.saturating_sub(initial_memory) / 1000; // Memory used during the algorithm (in KB)
 
             // At the end, push the results
-            results.push((best_value, iterations as usize, time));
+            results.push((best_value, memory_used, time));
         }
         // Get the mean values and print them
         calculate_mean_values(func_name, results);
     }
 }
 
-fn calculate_mean_values(func_name: &&str, values: Vec<(f64, usize, f64)>) {
+fn calculate_mean_values(func_name: &&str, values: Vec<(f64, u64, f64)>) {
     // Init the variables to sum the positions
     let mut sum_best_value = 0.0;
-    let mut sum_iterations = 0;
+    let mut sum_memory = 0;
     let mut sum_time = 0.0;
 
     // Iterate over the values to sum them
-    for (best_value, iterations, time) in &values {
+    for (best_value, memory, time) in &values {
         sum_best_value += best_value;
-        sum_iterations += *iterations;
+        sum_memory += *memory;
         sum_time += time;
     }
     let len_values = values.len() as f64;
     // Get the average
     let avg_best_value = sum_best_value / len_values;
-    let avg_iterations = (sum_iterations as f64 / len_values).round() as usize;
+    let avg_memory = (sum_memory as f64 / len_values).round() as usize;
     let avg_time = sum_time / len_values;
 
     // Print the valued
     println!(
-        "Function: '{}'. Best value: {}. Iterations: {}. Time: {}",
-        func_name, avg_best_value, avg_iterations, avg_time
+        "Function: '{}'. Best value: {}. Memory (in KB): {}. Time (s): {}",
+        func_name,
+        (avg_best_value.abs() + 1.0).log10(), // I perform a log10 +1 to normalize the data
+        avg_memory,
+        avg_time
     );
 }

@@ -17,4 +17,5 @@ pyo3 = { version = "0.17", features = ["extension-module"] }
 rand_distr = "0.4.3"
 argparse = "0.2.2"
 itertools = "0.13.0"
+sysinfo = "0.32.0"
 
