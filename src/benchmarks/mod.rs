@@ -197,7 +197,7 @@ pub fn single_test_benchmark() {
 pub fn compare_algorithms_benchmark() {
     // General variables
     let max_iterations = 500;
-    let repetitions = 100; // No. of repetitions to make with each test
+    let repetitions = 1000; // No. of repetitions to make with each test
 
     let benchmark_functions: Vec<(&str, fn(&ndarray::Array1<f64>) -> f64, Vec<f64>)> = vec![
         ("Sphere", sphere_function, vec![-5.12, 5.12]),
@@ -362,13 +362,29 @@ fn calculate_mean_values(func_name: &&str, values: Vec<(f64, u64, f64)>) {
     let avg_best_value = sum_best_value / len_values;
     let avg_memory = (sum_memory as f64 / len_values).round() as usize;
     let avg_time = sum_time / len_values;
+    // Get the info for the BoxPlot
+    let mut best_values: Vec<f64> = values
+        .iter()
+        .map(|(best_value, _, _)| *best_value)
+        .collect();
+    best_values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    let first_quarter = best_values[(len_values * 0.25).floor() as usize];
+    let second_quarter = best_values[(len_values * 0.75).floor() as usize];
+    // Get the lower and upper bounds
+    let lower_bound = best_values[0];
+    let upper_bound = best_values[(len_values - 1.0) as usize];
 
     // Print the valued
     println!(
-        "Function: '{}'. Best value: {}. Memory (in KB): {}. Time (s): {}",
+        "Function: '{}'. Best value: |LB={}, FQ={},M={},SQ={}, UB={}|. Memory (in KB): {}. Time (s): {}",
         func_name,
-        (avg_best_value.abs() + 1.0).log10(), // I perform a log10 +1 to normalize the data
+        (lower_bound + 1.0).log10(),
+        (first_quarter + 1.0).log10(),
+        (avg_best_value.abs() + 1.0).log10(), // I perform a log10 +1 to normalize the data,
+        (second_quarter + 1.0).log10(),
+        (upper_bound + 1.0).log10(),
         avg_memory,
-        avg_time
+        avg_time * 1000.0 // To return the time in ms. 1 s = 1000 ms
     );
 }

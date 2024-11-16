@@ -22,10 +22,11 @@ pub fn sphere_function(x: &Array1<f64>) -> f64 {
 /// **Returns**:
 ///     - `f64``: The value of the Rosenbrock function at the given position.
 pub fn rosenbrock_function(x: &Array1<f64>) -> f64 {
-    x.windows(2)
-        .into_iter()
-        .map(|w| 100.0 * (w[1] - w[0].powi(2)).powi(2) + (1.0 - w[0]).powi(2))
-        .sum()
+    let mut sum = 0.0;
+    for i in 0..x.len() {
+        sum += (1.0 - x[i]).powi(2) + 100.0 * (x[i].powi(2) - 1.0).powi(2);
+    }
+    sum
 }
 
 /// Rastrigin Function: f(x) = 10d + sum_{i=1}^{d} [x_i^2 - 10*cos(2*pi*x_i)]
