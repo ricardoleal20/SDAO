@@ -12,10 +12,10 @@ use benchmark_utils::{
     BenchmarkResult,
 };
 use functions::{
-    ackley_function, beale_function, booth_function, drop_wave_function, easom_function,
+    ackley_function, beale_function, booth_function, drop_wave_function,
     expanded_schaffer_f6_function, griewank_function, happy_cat_function, rastrigin_function,
     rosenbrock_function, salomon_function, schaffer_f7_function, schwefel_function,
-    sphere_function, styblinski_tang_function, weierstrass_function, xin_she_yang_1_function,
+    sphere_function, weierstrass_function, xin_she_yang_1_function,
 };
 // Algorithms imports
 use other_algorithms::{fick_law_algorithm, gradient_descent, simulated_annealing};
@@ -161,26 +161,19 @@ pub fn single_test_benchmark() {
         ("Ackley", ackley_function, vec![-32.768, 32.768], 2),
         ("Schwefel", schwefel_function, vec![-500.0, 500.0], 1),
         ("HappyCat", happy_cat_function, vec![-20.0, 20.0], 1),
-        ("DropWave", drop_wave_function, vec![-5.12, 5.12], 1),
+        ("DropWave", drop_wave_function, vec![-5.12, 5.12], 2),
         ("Salomon", salomon_function, vec![-100.0, 100.0], 1),
-        ("SchafferF7", schaffer_f7_function, vec![-100.0, 100.0], 1),
-        (
-            "StyblinskiTang",
-            styblinski_tang_function,
-            vec![-5.0, 5.0],
-            1,
-        ),
+        ("SchafferF7", schaffer_f7_function, vec![-100.0, 100.0], 2),
         ("Weierstrass", weierstrass_function, vec![-0.5, 0.5], 1),
         ("XinSheYang1", xin_she_yang_1_function, vec![-10.0, 10.0], 1),
         ("Booth", booth_function, vec![-10.0, 10.0], 2),
         ("Beale", beale_function, vec![-4.5, 4.5], 2),
-        ("Easom", easom_function, vec![-100.0, 100.0], 2),
         ("Griewank", griewank_function, vec![-600.0, 600.0], 1),
         (
             "ExpandedSchafferF6",
             expanded_schaffer_f6_function,
             vec![-100.0, 100.0],
-            1,
+            2,
         ),
     ];
     // Create the vecto for the results

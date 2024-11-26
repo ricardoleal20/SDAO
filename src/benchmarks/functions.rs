@@ -97,24 +97,6 @@ pub fn drop_wave_function(x: &Array1<f64>) -> f64 {
     1.0 - (numerator / denominator)
 }
 
-/// Styblinski-Tang Function: f(x) = sum_{i=1}^{d} [x_i^4 - 16*x_i^2 + 5*x_i]
-/// where d is the number of dimensions of the position vector.
-///
-/// **Arguments**:
-///    - x: A reference to an Array1<f64> representing the position vector.
-///
-/// **Returns**:
-///   - `f64`: The value of the Styblinski-Tang function at the given position.
-///
-/// **Note**:
-///   - The Styblinski-Tang function is a multimodal function with a global minimum at -39.16599*d.
-///  - The function is defined for x_i in [-5, 5] for all i in [1, d].
-pub fn styblinski_tang_function(x: &Array1<f64>) -> f64 {
-    x.iter()
-        .map(|xi| xi.powi(4) - 16.0 * xi.powi(2) + 5.0 * xi)
-        .sum()
-}
-
 /// Booth Function: f(x, y) = (x + 2y - 7)^2 + (2x + y - 5)^2
 /// where x and y are the two dimensions of the position vector.
 ///
@@ -153,7 +135,7 @@ pub fn beale_function(x: &Array1<f64>) -> f64 {
         + (2.625 - x0 + x0 * y.powi(3)).powi(2)
 }
 
-/// Weierstrass Function: f(x) = sum_{i=1}^{d} sum_{k=0}^{20} [a^k * cos(2*pi*b^k*(x_i + 0.5))]
+/// Weierstrass Function: f(x) = sum_{i=1}^{d} sum_{k=0}^{20} [a^k * cos(2*pi*b^k*(x_i + 0.5))] - d*sum_{k=0}^{20} a^k * cos(pi*b^k)
 /// where a = 0.5 and b = 3.
 ///
 /// **Arguments**:
@@ -168,33 +150,18 @@ pub fn beale_function(x: &Array1<f64>) -> f64 {
 pub fn weierstrass_function(x: &Array1<f64>) -> f64 {
     let a: f64 = 0.5;
     let b: f64 = 3.0;
+    let d = x.len() as f64;
     let mut sum = 0.0;
     for xi in x.iter() {
         for k in 0..21 {
             sum += a.powi(k) * (2.0 * std::f64::consts::PI * b.powi(k) * (xi + 0.5)).cos();
         }
     }
-    sum
-}
-
-/// Easom Function: f(x, y) = -cos(x) * cos(y) * exp(-(x - pi)^2 - (y - pi)^2)
-/// where x and y are the two dimensions of the position vector.
-///
-/// **Arguments**:
-///    - x: A reference to an Array1<f64> representing the position vector.
-///
-/// **Returns**:
-///   - `f64`: The value of the Easom function at the given position.
-///
-/// **Note**:
-/// - The Easom function is a multimodal function with a global minimum at f(pi, pi) = -1.
-/// - The function is defined for x and y in [-100, 100].
-pub fn easom_function(x: &Array1<f64>) -> f64 {
-    let x0 = x[0];
-    let y = x[1];
-    -(x0.cos()
-        * y.cos()
-        * ((x0 - std::f64::consts::PI).powi(2) + (y - std::f64::consts::PI).powi(2)).exp())
+    // Get the dimension sum coponent
+    let dim_sum = (0..21)
+        .map(|k| a.powi(k) * (std::f64::consts::PI * b.powi(k)).cos())
+        .sum::<f64>();
+    sum - d * dim_sum
 }
 
 /// Griewank’s Function: f(x) = sum_{i=1}^{d} [x_i^2 / 4000] - prod_{i=1}^{d} cos(x_i / sqrt(i)) + 1
