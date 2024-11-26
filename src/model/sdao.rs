@@ -235,8 +235,6 @@ impl SDAO {
             }
         }
 
-        // Update the time and the iterations used on the public parameters
-        self.execution_time = executed_time;
         if used_iterations < self.max_iterations {
             // If we didn't reach the maximum iterations...
             self.used_iterations = used_iterations;
@@ -246,8 +244,12 @@ impl SDAO {
         }
 
         if optimal_found {
+            // At the end, add the execution time to the struct
+            self.execution_time = executed_time;
             (Status::Optimal, feasible_solution)
         } else {
+            // Add the execution time to the struct
+            self.execution_time = start_time.elapsed().as_secs_f64();
             // Determine if a feasible solution was found
             let best = self.get_best_particle_opt();
             if let Some(best_particle) = best {
@@ -255,9 +257,7 @@ impl SDAO {
                 if self.verbose {
                     println!(
                         "Feasible solution || Stats: [Iter={}, T={}s, Value={}]",
-                        self.max_iterations,
-                        start_time.elapsed().as_secs(),
-                        best_particle.best_value
+                        self.max_iterations, self.execution_time, best_particle.best_value
                     );
                 }
                 (Status::Feasible, Some(best_particle.clone()))
@@ -266,8 +266,7 @@ impl SDAO {
                 if self.verbose {
                     println!(
                         "Infeasible solution || Stats: [Iter={}, T={}s, Value=None]",
-                        self.max_iterations,
-                        start_time.elapsed().as_secs()
+                        self.max_iterations, self.execution_time
                     );
                 }
                 (Status::Infeasible, None)
