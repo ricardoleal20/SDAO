@@ -36,7 +36,9 @@ pub fn run_benchmark_multiple(
     max_iterations: usize,
     verbose: bool,
     repetitions: usize,
+    dimension: Option<usize>,
 ) -> BenchmarkResult {
+    let dimension = dimension.unwrap_or(1);
     let mut best_values = Vec::with_capacity(repetitions);
     let mut iterations = Vec::with_capacity(repetitions);
     let mut time_seconds = Vec::with_capacity(repetitions);
@@ -46,7 +48,7 @@ pub fn run_benchmark_multiple(
         // Initialize and run the optimizer
         let mut optimizer = SDAO::new(
             num_particles,
-            1,
+            dimension,
             range_values.clone(),
             alpha,
             gamma,

@@ -12,7 +12,10 @@ use benchmark_utils::{
     BenchmarkResult,
 };
 use functions::{
-    ackley_function, rastrigin_function, rosenbrock_function, schwefel_function, sphere_function,
+    ackley_function, beale_function, booth_function, drop_wave_function, easom_function,
+    expanded_schaffer_f6_function, griewank_function, happy_cat_function, rastrigin_function,
+    rosenbrock_function, salomon_function, schaffer_f7_function, schwefel_function,
+    sphere_function, styblinski_tang_function, weierstrass_function, xin_she_yang_1_function,
 };
 // Algorithms imports
 use other_algorithms::{fick_law_algorithm, gradient_descent, simulated_annealing};
@@ -77,12 +80,12 @@ pub fn sensitibility_benchmarks() {
     ];
 
     // List all our test objective functions to test with them
-    let benchmark_functions: Vec<(&str, fn(&ndarray::Array1<f64>) -> f64, Vec<f64>)> = vec![
-        ("Sphere", sphere_function, vec![-5.12, 5.12]),
-        ("Rosenbrock", rosenbrock_function, vec![-5.0, 10.0]),
-        ("Rastrigin", rastrigin_function, vec![-5.12, 5.12]),
-        ("Ackley", ackley_function, vec![-32.768, 32.768]),
-        ("Schwefel", schwefel_function, vec![-500.0, 500.0]),
+    let benchmark_functions: Vec<(&str, fn(&ndarray::Array1<f64>) -> f64, Vec<f64>, usize)> = vec![
+        ("Sphere", sphere_function, vec![-5.12, 5.12], 1),
+        ("Rosenbrock", rosenbrock_function, vec![-5.0, 10.0], 2),
+        ("Rastrigin", rastrigin_function, vec![-5.12, 5.12], 1),
+        ("Ackley", ackley_function, vec![-32.768, 32.768], 2),
+        ("Schwefel", schwefel_function, vec![-500.0, 500.0], 1),
     ];
 
     let mut results: Vec<BenchmarkResult> = Vec::new();
@@ -90,7 +93,7 @@ pub fn sensitibility_benchmarks() {
     // Iterate over the combinations of functions
     for (param, alpha_values, gamma_values, diff_values, beta_values) in parameter_sets.iter() {
         // Here, iterate over the parameter sets
-        for (func_name, func, range_values) in benchmark_functions.iter() {
+        for (func_name, func, range_values, dim) in benchmark_functions.iter() {
             // Here, create the combinations for the parameter that contains the extra values on it
             let parameter_combinations = generate_parameter_combinations(
                 &alpha_values,
@@ -115,6 +118,7 @@ pub fn sensitibility_benchmarks() {
                         max_iterations,
                         verbose,
                         repetitions,
+                        Some(*dim),
                     )
                 })
                 .collect();
@@ -150,18 +154,40 @@ pub fn single_test_benchmark() {
     let max_iterations: usize = 500;
 
     // Define the functions with their search-space parameters
-    let benchmark_functions: Vec<(&str, fn(&ndarray::Array1<f64>) -> f64, Vec<f64>)> = vec![
-        ("Sphere", sphere_function, vec![-5.12, 5.12]),
-        ("Rosenbrock", rosenbrock_function, vec![-5.0, 10.0]),
-        ("Rastrigin", rastrigin_function, vec![-5.12, 5.12]),
-        ("Ackley", ackley_function, vec![-32.768, 32.768]),
-        ("Schwefel", schwefel_function, vec![-500.0, 500.0]),
+    let benchmark_functions: Vec<(&str, fn(&ndarray::Array1<f64>) -> f64, Vec<f64>, usize)> = vec![
+        ("Sphere", sphere_function, vec![-5.12, 5.12], 1),
+        ("Rosenbrock", rosenbrock_function, vec![-5.0, 10.0], 2),
+        ("Rastrigin", rastrigin_function, vec![-5.12, 5.12], 1),
+        ("Ackley", ackley_function, vec![-32.768, 32.768], 2),
+        ("Schwefel", schwefel_function, vec![-500.0, 500.0], 1),
+        ("HappyCat", happy_cat_function, vec![-20.0, 20.0], 1),
+        ("DropWave", drop_wave_function, vec![-5.12, 5.12], 1),
+        ("Salomon", salomon_function, vec![-100.0, 100.0], 1),
+        ("SchafferF7", schaffer_f7_function, vec![-100.0, 100.0], 1),
+        (
+            "StyblinskiTang",
+            styblinski_tang_function,
+            vec![-5.0, 5.0],
+            1,
+        ),
+        ("Weierstrass", weierstrass_function, vec![-0.5, 0.5], 1),
+        ("XinSheYang1", xin_she_yang_1_function, vec![-10.0, 10.0], 1),
+        ("Booth", booth_function, vec![-10.0, 10.0], 2),
+        ("Beale", beale_function, vec![-4.5, 4.5], 2),
+        ("Easom", easom_function, vec![-100.0, 100.0], 2),
+        ("Griewank", griewank_function, vec![-600.0, 600.0], 1),
+        (
+            "ExpandedSchafferF6",
+            expanded_schaffer_f6_function,
+            vec![-100.0, 100.0],
+            1,
+        ),
     ];
     // Create the vecto for the results
     let mut results: Vec<BenchmarkResult> = Vec::new();
 
     // Then, iterate over it to test the SDAO
-    for (func_name, func, range_values) in benchmark_functions.iter() {
+    for (func_name, func, range_values, dim) in benchmark_functions.iter() {
         // Run the benchmark for the function
         let result = run_benchmark_multiple(
             *func,
@@ -176,6 +202,7 @@ pub fn single_test_benchmark() {
             max_iterations,
             false,
             100,
+            Some(*dim),
         );
         // Extend the vector with the solution
         results.push(result);
