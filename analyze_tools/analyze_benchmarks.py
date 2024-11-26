@@ -208,15 +208,17 @@ if __name__ == "__main__":
     available_options = ["single_test", "alpha", "beta",
                          "gamma", "diff_coeff", "all"]
 
-    if args.benchmark not in available_options:
+    if args.benchmark not in available_options + ["single_test"]:
         raise ValueError(
             "Invalid benchmark. The only available options are:" +
-            "[single_test, alpha, beta, gamma, diff_coeff, all]"
+            "[single_test, alpha, beta, gamma, diff_coeff, single_test, all]"
         )
     # Then, we'll only check if we have 'all'. If we do, we'll run all the benchmarks
     # iterating over the available options. If not, we'll only run it for the normal
     if args.benchmark == "all":
         for option in available_options[:-1]:
+            if option == "single_test":
+                continue
             analyze_benchmark(option)
     elif args.benchmark == "single_test":
         analyze_single_test("single_test")
