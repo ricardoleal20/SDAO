@@ -2,6 +2,7 @@
 ///
 /// REFERENCE: https://www.mdpi.com/2306-5729/7/4/46
 use ndarray::Array1;
+use rand::Rng;
 
 /// Sphere Function: f(x) = sum(x_i^2)
 ///
@@ -43,6 +44,25 @@ pub fn rastrigin_function(x: &Array1<f64>) -> f64 {
         + x.iter()
             .map(|xi| xi.powi(2) - 10.0 * (2.0 * std::f64::consts::PI * xi).cos())
             .sum::<f64>()
+}
+
+/// Rastrigin Function: f(x) = 10d + sum_{i=1}^{d} [x_i^2 - 10*cos(2*pi*x_i)]
+///
+/// **Arguments**:
+///     - x: A reference to an Array1<f64> representing the position vector.
+///
+/// **Returns**:
+///     - `f64`: The value of the Rastrigin function at the given position.
+pub fn rastrigin_noisy_function(x: &Array1<f64>) -> f64 {
+    // Initialize the random number generator
+    let mut rng = rand::thread_rng();
+
+    let d = x.len() as f64;
+    10.0 * d
+        + x.iter()
+            .map(|xi| xi.powi(2) - 10.0 * (2.0 * std::f64::consts::PI * xi).cos())
+            .sum::<f64>()
+        + rng.gen_range(-1.0..1.0)
 }
 
 /// Ackley Function:

@@ -12,13 +12,26 @@ use benchmark_utils::{
     BenchmarkResult,
 };
 use functions::{
-    ackley_function, beale_function, booth_function, drop_wave_function,
-    expanded_schaffer_f6_function, griewank_function, happy_cat_function, rastrigin_function,
-    rosenbrock_function, salomon_function, schaffer_f7_function, schwefel_function,
-    sphere_function, weierstrass_function, xin_she_yang_1_function,
+    ackley_function,
+    beale_function,
+    booth_function,
+    drop_wave_function,
+    expanded_schaffer_f6_function,
+    griewank_function,
+    happy_cat_function,
+    rastrigin_function,
+    // Noisy functions
+    rastrigin_noisy_function,
+    rosenbrock_function,
+    salomon_function,
+    schaffer_f7_function,
+    schwefel_function,
+    sphere_function,
+    weierstrass_function,
+    xin_she_yang_1_function,
 };
 // Algorithms imports
-use other_algorithms::{fick_law_algorithm, gradient_descent, simulated_annealing};
+use other_algorithms::{fick_law_algorithm, gradient_descent, pso, simulated_annealing};
 use sdao::SDAO;
 
 /// Perform the benchmarks for the sensitivity analysis of the parameters
@@ -225,6 +238,11 @@ pub fn compare_algorithms_benchmark() {
         ("Rastrigin", rastrigin_function, vec![-5.12, 5.12]),
         ("Ackley", ackley_function, vec![-32.768, 32.768]),
         ("Schwefel", schwefel_function, vec![-500.0, 500.0]),
+        (
+            "Rastrigin with noise",
+            rastrigin_noisy_function,
+            vec![-5.12, 5.12],
+        ),
     ];
     // Initialize the system info object
     let mut system = System::new_all();
@@ -305,8 +323,7 @@ pub fn compare_algorithms_benchmark() {
             system.refresh_memory();
             let final_memory = system.used_memory();
             let memory_used = final_memory.saturating_sub(initial_memory) / 1000; // Memory used during the algorithm (in KB)
-
-            // At the end, push the results
+                                                                                  // At the end, push the results
             results.push((best_value, memory_used, time));
         }
         // Get the mean values and print them
@@ -363,6 +380,36 @@ pub fn compare_algorithms_benchmark() {
         // Get the mean values and print them
         calculate_mean_values(func_name, results);
     }
+    // * PSO
+    println!("=====================================");
+    println!("Running the PSO algorithm for the functions...");
+    print!("");
+    for (func_name, func, range_values) in benchmark_functions.iter() {
+        let mut results: Vec<(f64, u64, f64)> = Vec::new();
+        // Run the experiments
+        for _ in 0..repetitions {
+            // Record initial memory usage
+            system.refresh_memory();
+            let initial_memory = system.used_memory();
+
+            let (best_value, time) = pso(
+                range_values.clone(),
+                *func,
+                num_particles_value,
+                1,
+                max_iterations,
+            );
+            // Record final memory usage
+            system.refresh_memory();
+            let final_memory = system.used_memory();
+            let memory_used = final_memory.saturating_sub(initial_memory) / 1000; // Memory used during the algorithm (in KB)
+
+            // At the end, push the results
+            results.push((best_value, memory_used, time));
+        }
+        // Get the mean values and print them
+        calculate_mean_values(func_name, results);
+    }
 }
 
 fn calculate_mean_values(func_name: &&str, values: Vec<(f64, u64, f64)>) {
@@ -397,7 +444,7 @@ fn calculate_mean_values(func_name: &&str, values: Vec<(f64, u64, f64)>) {
 
     // Print the valued
     println!(
-        "Function: '{}'. Best value: |LB={}, FQ={},M={},SQ={}, UB={}|. Memory (in KB): {}. Time (s): {}",
+        "Function: '{}'. Best value: |LB={}, FQ={},M={},SQ={}, UB={}|. Memory (in KB): {}. Time (ms): {}",
         func_name,
         (lower_bound + 1.0).log10(),
         (first_quarter + 1.0).log10(),
