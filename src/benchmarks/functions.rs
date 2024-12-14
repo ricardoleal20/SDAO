@@ -111,7 +111,7 @@ pub fn schwefel_function(x: &Array1<f64>) -> f64 {
 /// - The function is defined for x and y in [-5.12, 5.12].
 pub fn drop_wave_function(x: &Array1<f64>) -> f64 {
     let x0 = x[0];
-    let y = x[1];
+    let y = if x.len() > 1 { x[1] } else { 0.0 };
     let numerator = 1.0 + (12.0 * (x0.powi(2) + y.powi(2)).sqrt()).cos();
     let denominator = 0.5 * (x0.powi(2) + y.powi(2)) + 2.0;
     1.0 - (numerator / denominator)
@@ -131,7 +131,8 @@ pub fn drop_wave_function(x: &Array1<f64>) -> f64 {
 /// - The function is defined for x and y in [-10, 10].
 pub fn booth_function(x: &Array1<f64>) -> f64 {
     let x0 = x[0];
-    let y = x[1];
+    let y = if x.len() > 1 { x[1] } else { 0.0 };
+
     (x0 + 2.0 * y - 7.0).powi(2) + (2.0 * x0 + y - 5.0).powi(2)
 }
 
@@ -149,7 +150,7 @@ pub fn booth_function(x: &Array1<f64>) -> f64 {
 /// - The function is defined for x and y in [-4.5, 4.5].
 pub fn beale_function(x: &Array1<f64>) -> f64 {
     let x0 = x[0];
-    let y = x[1];
+    let y = if x.len() > 1 { x[1] } else { 0.0 };
     (1.5 - x0 + x0 * y).powi(2)
         + (2.25 - x0 + x0 * y.powi(2)).powi(2)
         + (2.625 - x0 + x0 * y.powi(3)).powi(2)
@@ -240,7 +241,7 @@ pub fn happy_cat_function(x: &Array1<f64>) -> f64 {
 /// - The function is defined for x and y in [-100, 100].
 pub fn schaffer_f7_function(x: &Array1<f64>) -> f64 {
     let x0 = x[0];
-    let y = x[1];
+    let y = if x.len() > 1 { x[1] } else { 0.0 };
     let sq_sum = x0.powi(2) + y.powi(2);
     0.5 + (x0.sin().powi(2) - 0.5) / (1.0 + 0.001 * sq_sum).powi(2)
 }
@@ -259,7 +260,7 @@ pub fn schaffer_f7_function(x: &Array1<f64>) -> f64 {
 /// - The function is defined for x and y in [-100, 100].
 pub fn expanded_schaffer_f6_function(x: &Array1<f64>) -> f64 {
     let x0 = x[0];
-    let y = x[1];
+    let y = if x.len() > 1 { x[1] } else { 0.0 };
     let sq_sum = x0.powi(2) + y.powi(2);
     0.5 + (x0.sin().powi(2) - 0.5) / (1.0 + 0.001 * sq_sum).powi(2)
 }
