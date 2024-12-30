@@ -3,21 +3,58 @@ Run the algorithm...
 """
 from typing import Literal
 from argparse import ArgumentParser
+import matplotlib.pyplot as plt
+import pydash as _py
+import numpy as np
 # Local imports
-from model.functions.bench_funcs import stoch_funcs
-from model.solver import Solver, ExperimentFunction
+from model.functions.bench_funcs import bench_funcs
+from model.solver import Solver, ExperimentFunction, BenchmarkResult
 # Model imports
 from model.soa.template import Algorithm
 from model.sdao import SDAO
 from model.soa.fractal import StochasticFractalSearch
 
 
+def plot_bar_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
+    """Plot the results in a horizontal bar chart"""
+    _, ax = plt.subplots()
+    # Define the y values (functions)
+    y_values = {res["function"] for res in benchmarks["SDAO"]}
+    # Define the height of each bar
+    bar_height = 0.35
+    # Define the positions of the bars
+    r1 = np.arange(len(y_values))
+
+    for alg_name, bench in benchmarks.items():
+        # Extract the mean best values for each algorithm
+        values = [
+            np.log10(1+np.mean([res["best_value"] for res in results]))
+            for results in _py.group_by(bench, lambda x: x["function"]).values()
+        ]
+        # Add the bar plot
+        ax.barh(r1, values, height=bar_height,
+                edgecolor='grey', label=alg_name)
+        # Update the r1 values
+        r1 = [x + bar_height for x in r1]
+    # Add labels
+    ax.set_ylabel('Functions', fontweight='bold')
+    ax.set_xlabel('Best Value', fontweight='bold')
+    ax.set_title('Best Value for each Function and Algorithm')
+    ax.set_yticks([r + bar_height / 2 for r in range(len(y_values))])
+    ax.set_yticklabels(y_values)
+
+    # Add legend
+    ax.legend()
+
+    # Show the plot
+    plt.show()
+
 def functions_due_to_scenario(scenario: Literal[0, 1, 2]) -> list[ExperimentFunction]:
     """Due to the scenario, return the experiment functions to use!"""
     match scenario:
         case 0:
             print("Using Scenario 0: Normal benchmark functions.")
-            return stoch_funcs
+            return bench_funcs
         case 1:
             raise NotImplementedError(
                 "Scenario 1 not implemented yet... [STOCHASTIC_FUNCS]")
@@ -90,16 +127,23 @@ if __name__ == "__main__":
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 
     # Run the benchmark
+    benchmarks_results: dict[str, list[BenchmarkResult]] = {}
     for alg in algorithms:
-        print(f"Running the {alg.__class__.__name__} algorithm...")
+        NAME = alg.__class__.__name__
+        print(f"Running the {NAME} algorithm...")
+        print(32*"=")
         results = solver.benchmark(
             dimension=args.dimension,
             model=alg.optimize
         )
         # Print the results
-        print("Results:")
-        for res in results:
-            print(
-                f"[Experiment={res['iteration']}] || Best value: {res['best_value']}")
+        benchmarks_results[NAME] = results
         # New line
         print("\n")
+
+    # Plot the results as a bar chart
+    print("Plotting the results...")
+    # ====================================== #
+    #                Plotting                #
+    # ====================================== #
+    plot_bar_results(benchmarks_results)

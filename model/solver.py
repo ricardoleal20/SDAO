@@ -25,6 +25,7 @@ class BenchmarkResult(TypedDict):
     iteration: int
     best_value: float
     best_position: np.ndarray
+    function: str
     time: float
     memory: float
 
@@ -70,6 +71,7 @@ class Solver:
                     "iteration": i,
                     "best_value": best_value,
                     "best_position": best_position,
+                    "function": func["name"],
                     "time": 0.0,
                     "memory": 0.0
                 })
