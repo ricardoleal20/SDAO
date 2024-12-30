@@ -25,3 +25,9 @@ Cargo.lock
 *.json
 results/
 *.csv
+
+# Ignore Python files
+*.pyc
+*.pyo
+__pycache__/
+
