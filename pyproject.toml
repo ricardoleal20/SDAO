@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "sdao"
+version = "0.1.0"
+description = "Project for developing a new optimization approach for Stochastic functions"
+authors = ["ricardoleal20 <rick.leal420@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.13"
+numpy = ">=2.2.1"
+tqdm = ">=4.67.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
