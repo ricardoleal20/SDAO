@@ -11,6 +11,7 @@ python = ">=3.10, <3.13"
 numpy = ">=2.2.1"
 tqdm = ">=4.67.1"
 matplotlib = ">=3.10.0"
+pydash = ">=8.0.4"
 
 [build-system]
 requires = ["poetry-core"]
