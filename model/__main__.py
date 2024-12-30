@@ -3,7 +3,7 @@ Run the algorithm...
 """
 from typing import Literal
 from argparse import ArgumentParser
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # pylint: disable=E0401
 import pydash as _py
 import numpy as np
 # Local imports
@@ -13,7 +13,11 @@ from model.solver import Solver, ExperimentFunction, BenchmarkResult
 from model.soa.template import Algorithm
 from model.sdao import SDAO
 from model.soa.fractal import StochasticFractalSearch
+from model.soa.algebraic_sgd import AlgebraicSGD
 
+# Some changes for the Matplotlib import
+plt.rcParams['svg.fonttype'] = 'none'
+# set_matplotlib_formats('svg')
 
 def plot_bar_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
     """Plot the results in a horizontal bar chart"""
@@ -28,6 +32,9 @@ def plot_bar_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
     for alg_name, bench in benchmarks.items():
         # Extract the mean best values for each algorithm
         values = [
+            # * Note: The log is to convert the values to a better scale
+            # * for visualization purposes.
+            # * This is going to standardize the values to a log scale.
             np.log10(1+np.mean([res["best_value"] for res in results]))
             for results in _py.group_by(bench, lambda x: x["function"]).values()
         ]
@@ -73,6 +80,10 @@ if __name__ == "__main__":
         "-v", "--verbose", action="store_true", help="Increase output verbosity."
     )
     parser.add_argument(
+        "-e", "--experiments", type=int, default=100,
+        help="Number of experiments (for statistical analysis)."
+    )
+    parser.add_argument(
         "-i", "--iterations", type=int, default=100, help="Number of iterations."
     )
     parser.add_argument(
@@ -88,14 +99,14 @@ if __name__ == "__main__":
 
     # Create the solver
     solver = Solver(
-        num_experiments=args.iterations,
+        num_experiments=args.experiments,
         functions=functions_due_to_scenario(args.scenario)
     )
     # ====================================== #
     #                Models                  #
     # ====================================== #
     sdao = SDAO(
-        num_iterations=300,
+        num_iterations=args.iterations,
         num_particles=50,
         version=1,
         params={
@@ -109,8 +120,13 @@ if __name__ == "__main__":
 
     sfs = StochasticFractalSearch(
         n_population=50,
-        n_iterations=300,
+        n_iterations=args.iterations,
         fractal_factor=0.9,
+        verbose=args.verbose
+    )
+
+    sgd = AlgebraicSGD(
+        n_iterations=args.iterations,
         verbose=args.verbose
     )
 
@@ -118,11 +134,13 @@ if __name__ == "__main__":
     algorithms: list[Algorithm] = []
     match args.algorithm:
         case "all":
-            algorithms = [sdao, sfs]
+            algorithms = [sdao, sfs, sgd]
         case "sdao":
             algorithms = [sdao]
         case "sfs":
             algorithms = [sfs]
+        case "sgd":
+            algorithms = [sgd]
         case _:
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 
