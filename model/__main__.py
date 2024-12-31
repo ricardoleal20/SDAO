@@ -5,6 +5,7 @@ from typing import Literal
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt  # pylint: disable=E0401
 import pydash as _py
+import pandas as pd
 import numpy as np
 # Local imports
 from model.functions.bench_funcs import bench_funcs
@@ -56,6 +57,30 @@ def plot_bar_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
 
     # Show the plot
     plt.show()
+
+
+def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
+    """Show results as a table, as a csv"""
+    # Print the results for the best value.
+    # The columns should be the test functions, and the rows should be the algorithms.
+    # The values should be the mean best value for each function.
+    bench_results = {}
+    for alg_name, bench in benchmarks.items():
+        # Extract the mean best values for each algorithm
+        values = {
+            # * Note: The log is to convert the values to a better scale
+            # * for visualization purposes.
+            # * This is going to standardize the values to a log scale.
+            func: np.log10(1+np.mean([res["best_value"] for res in results]))
+            for func, results in _py.group_by(bench, lambda x: x["function"]).items()
+        }
+        bench_results[alg_name] = values
+    # From this, plot it as a table
+    dataframe = pd.DataFrame(bench_results)
+    print(dataframe)
+
+
+
 
 def functions_due_to_scenario(scenario: Literal[0, 1, 2]) -> list[ExperimentFunction]:
     """Due to the scenario, return the experiment functions to use!"""
@@ -175,3 +200,4 @@ if __name__ == "__main__":
     #                Plotting                #
     # ====================================== #
     plot_bar_results(benchmarks_results)
+    show_results(benchmarks_results)
