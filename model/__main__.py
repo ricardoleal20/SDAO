@@ -14,6 +14,7 @@ from model.soa.template import Algorithm
 from model.sdao import SDAO
 from model.soa.fractal import StochasticFractalSearch
 from model.soa.algebraic_sgd import AlgebraicSGD
+from model.soa.shade import SHADEwithILS
 
 # Some changes for the Matplotlib import
 plt.rcParams['svg.fonttype'] = 'none'
@@ -130,17 +131,26 @@ if __name__ == "__main__":
         verbose=args.verbose
     )
 
+    shade = SHADEwithILS(
+        n_population=50,
+        n_iterations=args.iterations,
+        memory_size=10,
+        verbose=args.verbose
+    )
+
     # Define which algorithms you'll run
     algorithms: list[Algorithm] = []
     match args.algorithm:
         case "all":
-            algorithms = [sdao, sfs, sgd]
+            algorithms = [sdao, sfs, sgd, shade]
         case "sdao":
             algorithms = [sdao]
         case "sfs":
             algorithms = [sfs]
         case "sgd":
             algorithms = [sgd]
+        case "shade":
+            algorithms = [shade]
         case _:
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 
