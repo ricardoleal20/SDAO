@@ -17,6 +17,7 @@ from model.soa.fractal import StochasticFractalSearch
 from model.soa.algebraic_sgd import AlgebraicSGD
 from model.soa.shade import SHADEwithILS
 from model.soa.path_relinking import PathRelinking
+from model.soa.amso import AMSO
 
 # Some changes for the Matplotlib import
 plt.rcParams['svg.fonttype'] = 'none'
@@ -171,11 +172,22 @@ if __name__ == "__main__":
         verbose=args.verbose
     )
 
+    amso = AMSO(
+        num_swarms=5,
+        swarm_size=10,
+        n_iterations=args.iterations,
+        verbose=args.verbose
+    )
+
     # Define which algorithms you'll run
     algorithms: list[Algorithm] = []
     match args.algorithm:
         case "all":
-            algorithms = [sdao, sfs, sgd, shade, path_relinking]
+            algorithms = [
+                sdao, sfs, sgd,
+                shade, path_relinking,
+                amso
+            ]
         case "sdao":
             algorithms = [sdao]
         case "sfs":
@@ -186,6 +198,8 @@ if __name__ == "__main__":
             algorithms = [shade]
         case "path_relinking":
             algorithms = [path_relinking]
+        case "amso":
+            algorithms = [amso]
         case _:
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 
@@ -209,5 +223,5 @@ if __name__ == "__main__":
     # ====================================== #
     #                Plotting                #
     # ====================================== #
-    plot_bar_results(benchmarks_results)
+    # plot_bar_results(benchmarks_results)
     show_results(benchmarks_results)

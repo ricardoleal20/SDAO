@@ -92,9 +92,9 @@ def drop_wave_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Drop-Wave function at the given position.
     """
-    x0, y = x[0], x[1] if len(x) > 1 else 0
-    numerator = 1 + math.cos(12 * math.sqrt(x0**2 + y**2))
-    denominator = 0.5 * (x0**2 + y**2) + 2
+    quadratic_sum = np.sum([y**2 for y in x])
+    numerator = 1 + math.cos(12 * math.sqrt(quadratic_sum))
+    denominator = 0.5 * (quadratic_sum) + 2
     return 1 - (numerator / denominator)
 
 
@@ -197,8 +197,7 @@ def schaffer_f7_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Schaffer's F7 function at the given position.
     """
-    x0, y = x[0], x[1] if len(x) > 1 else 0
-    sq_sum = x0**2 + y**2
+    sq_sum = np.sum([y**2 for y in x])
     return 0.5 + (math.sin(math.sqrt(sq_sum))**2 - 0.5) / (1 + 0.001 * sq_sum)**2
 
 
@@ -216,8 +215,7 @@ def expanded_schaffer_f6_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Expanded Schaffer's F6 function at the given position.
     """
-    x0, y = x[0], x[1] if len(x) > 1 else 0
-    sq_sum = x0**2 + y**2
+    sq_sum = np.sum([y**2 for y in x])
     return 0.5 + (math.sin(math.sqrt(sq_sum))**2 - 0.5) / (1 + 0.001 * sq_sum)**2
 
 
