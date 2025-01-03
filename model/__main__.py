@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 # Local imports
 from model.functions.bench_funcs import bench_funcs
+from model.functions.stoch_funcs import stoch_funcs
 from model.solver import Solver, ExperimentFunction, BenchmarkResult
 # Model imports
 from model.soa.template import Algorithm
@@ -92,8 +93,8 @@ def functions_due_to_scenario(scenario: Literal[0, 1, 2]) -> list[ExperimentFunc
             print("Using Scenario 0: Normal benchmark functions.")
             return bench_funcs
         case 1:
-            raise NotImplementedError(
-                "Scenario 1 not implemented yet... [STOCHASTIC_FUNCS]")
+            print("Using Scenario 1: Stochastic benchmark functions.")
+            return stoch_funcs
         case 2:
             raise NotImplementedError(
                 "Scenario 2 not implemented yet... [REAL_WORLD]")
