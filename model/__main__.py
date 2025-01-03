@@ -18,6 +18,7 @@ from model.soa.algebraic_sgd import AlgebraicSGD
 from model.soa.shade import SHADEwithILS
 from model.soa.path_relinking import PathRelinking
 from model.soa.amso import AMSO
+from model.soa.tlpso import TLPSO
 
 # Some changes for the Matplotlib import
 plt.rcParams['svg.fonttype'] = 'none'
@@ -179,6 +180,13 @@ if __name__ == "__main__":
         verbose=args.verbose
     )
 
+    tlpso = TLPSO(
+        global_swarm_size=5,
+        local_swarm_size=50,
+        max_iterations=args.iterations,
+        verbose=args.verbose
+    )
+
     # Define which algorithms you'll run
     algorithms: list[Algorithm] = []
     match args.algorithm:
@@ -186,7 +194,7 @@ if __name__ == "__main__":
             algorithms = [
                 sdao, sfs, sgd,
                 shade, path_relinking,
-                amso
+                amso, tlpso
             ]
         case "sdao":
             algorithms = [sdao]
@@ -200,6 +208,8 @@ if __name__ == "__main__":
             algorithms = [path_relinking]
         case "amso":
             algorithms = [amso]
+        case "tlpso":
+            algorithms = [tlpso]
         case _:
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 
