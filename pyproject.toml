@@ -14,6 +14,7 @@ matplotlib = ">=3.10.0"
 pydash = ">=8.0.4"
 pandas = ">=2.2.3"
 scipy = ">=1.15.1"
+statsmodels = ">=0.14.4"
 
 [build-system]
 requires = ["poetry-core"]
