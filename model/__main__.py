@@ -11,6 +11,7 @@ import numpy as np
 from model.functions.bench_funcs import bench_funcs
 from model.functions.stoch_funcs import stoch_funcs
 from model.solver import Solver, ExperimentFunction, BenchmarkResult
+from model.utils import statistical_tests
 # Model imports
 from model.soa.template import Algorithm
 from model.sdao import SDAO
@@ -20,6 +21,7 @@ from model.soa.shade import SHADEwithILS
 from model.soa.path_relinking import PathRelinking
 from model.soa.amso import AMSO
 from model.soa.tlpso import TLPSO
+
 
 # Some changes for the Matplotlib import
 plt.rcParams['svg.fonttype'] = 'none'
@@ -72,10 +74,11 @@ def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
     for alg_name, bench in benchmarks.items():
         # Extract the mean best values for each algorithm
         values = {
+            func: np.mean([res["best_value"] for res in results])
             # * Note: The log is to convert the values to a better scale
             # * for visualization purposes.
             # * This is going to standardize the values to a log scale.
-            func: np.log10(1+np.mean([res["best_value"] for res in results]))
+            # func: np.log10(1+np.mean([res["best_value"] for res in results]))
             for func, results in _py.group_by(bench, lambda x: x["function"]).items()
         }
         bench_results[alg_name] = values
@@ -125,6 +128,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "-a", "--algorithm", type=str, default="all", help="Algorithm to run."
     )
+    parser.add_argument(
+        "-ltx", "--latex", type=str, default=True, help="Store the results in a LaTex friendly way."
+    )
+
     args = parser.parse_args()
 
     # Create the solver
@@ -216,9 +223,9 @@ if __name__ == "__main__":
 
     # Run the benchmark
     benchmarks_results: dict[str, list[BenchmarkResult]] = {}
-    for alg in algorithms:
+    for i, alg in enumerate(algorithms, start=1):
         NAME = alg.__class__.__name__
-        print(f"Running the {NAME} algorithm...")
+        print(f"Running the {NAME} algorithm... Running {i}/{len(algorithms)}")
         print(32*"=")
         results = solver.benchmark(
             dimension=args.dimension,
@@ -236,3 +243,9 @@ if __name__ == "__main__":
     # ====================================== #
     # plot_bar_results(benchmarks_results)
     show_results(benchmarks_results)
+    # ====================================== #
+    #                Analysis                #
+    # ====================================== #
+    # Perform an statistical test on the results
+    print("Performing statistical test on the results...")
+    statistical_tests(benchmarks_results, args.latex)
