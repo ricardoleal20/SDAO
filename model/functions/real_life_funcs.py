@@ -32,7 +32,11 @@ def vrp_objective(
     # simulate possible traffic jams or other delays.
     noisy_travel_times = travel_times + \
         np.random.normal(0, traffic_noise_std, travel_times.shape)
+    # Keep the diagonal as 0. THIS IS A HARD CONSTRAINT FOR THE VRP.
+    np.fill_diagonal(noisy_travel_times, 0)
 
+    # Modify the route to round it to the nearest integer.
+    route = np.round(route, 0)
     # in case that we've repeated cities in the route, we're going
     # to return an infinite cost.
     # * HARD CONSTRAINT.
@@ -42,8 +46,8 @@ def vrp_objective(
     # Then, iteerate over the calculated route to calculate the total cost.
     for i in range(len(route) - 1):
         # * Add the origin and the destination to know the travel time.
-        origin = int(round(route[i], 0))
-        destination = int(round(route[i + 1], 0))
+        origin = int(route[i])
+        destination = int(route[i+1])
         # Add travel time with noise
         travel_time = noisy_travel_times[origin][destination]
         current_time += travel_time
@@ -53,8 +57,8 @@ def vrp_objective(
             # Quadratic penalty for lateness.
             # The later the delivery, the higher the cost.
             total_cost += (current_time - deadlines[destination]) ** 2
-
         total_cost += travel_time  # Add the travel time to the total cost.
+
     return total_cost
 
 
