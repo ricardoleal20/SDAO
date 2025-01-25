@@ -3,6 +3,8 @@ Run the algorithm...
 """
 from typing import Literal
 from argparse import ArgumentParser
+import warnings
+from functools import partial
 import matplotlib.pyplot as plt  # pylint: disable=E0401
 import pydash as _py
 import pandas as pd
@@ -10,6 +12,7 @@ import numpy as np
 # Local imports
 from model.functions.bench_funcs import bench_funcs
 from model.functions.stoch_funcs import stoch_funcs
+from model.functions.real_life_funcs import real_life_funcs
 from model.solver import Solver, ExperimentFunction, BenchmarkResult
 from model.utils import statistical_tests
 # Model imports
@@ -87,9 +90,11 @@ def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
     print(dataframe)
 
 
-
-
-def functions_due_to_scenario(scenario: Literal[0, 1, 2]) -> list[ExperimentFunction]:
+def functions_due_to_scenario(
+    scenario: Literal[0, 1, 2],
+    *,
+    dim: int = 1
+) -> list[ExperimentFunction]:
     """Due to the scenario, return the experiment functions to use!"""
     match scenario:
         case 0:
@@ -99,8 +104,63 @@ def functions_due_to_scenario(scenario: Literal[0, 1, 2]) -> list[ExperimentFunc
             print("Using Scenario 1: Stochastic benchmark functions.")
             return stoch_funcs
         case 2:
-            raise NotImplementedError(
-                "Scenario 2 not implemented yet... [REAL_WORLD]")
+            print("Using Scenario 2: Real life functions.")
+            # * Here, using the dimension, we're going to generate the variables for
+            # * each function....
+            for func in real_life_funcs:
+                match func["name"]:
+                    case "Predictive Maintenance":
+                        # In this scenario, generate the
+                        # failure probabilities to use in the function.
+                        # Also, generate the repair costs!
+                        failure_probs = np.random.uniform(0, 1, size=dim)
+                        repair_costs = np.random.uniform(0, 100, size=dim)
+                        # And include the maintenance costs
+                        func["call"] = partial(
+                            func["call"],
+                            failure_probs=failure_probs,  # type: ignore
+                            repair_costs=repair_costs,  # type: ignore
+                            downtime_costs=10  # type: ignore
+                        )
+                    case "VRP":
+                        # In this scenario, generate the
+                        # travel time matrix to use in the function.
+                        travel_time = np.random.uniform(
+                            30, 100, size=(dim, dim))
+                        np.fill_diagonal(travel_time, 0)
+
+                        deadlines = np.random.uniform(50, 100, size=dim)
+                        # And include the travel time matrix
+                        func["call"] = partial(
+                            func["call"],
+                            travel_times=travel_time,  # type: ignore
+                            deadlines=deadlines,  # type: ignore
+                            traffic_noise_std=0.5  # type: ignore
+                        )
+                    case "Chemical Experiment":
+                        # Don't do nothing for this chemical experiment,
+                        # the best I can do is to warn the user that
+                        # this function only works with a dimension of 3.
+                        msg = "Chemical Experiment only works with a dimension of 3. "
+                        if dim < 3:
+                            warnings.warn(
+                                msg +
+                                f"Since the dimension is {dim}, we're going to return 0."
+                            )
+                        if dim > 3:
+                            warnings.warn(
+                                msg + f"Since the dimension is {dim}, " +
+                                "we're going to take the first 3 values."
+                            )
+                    case _:
+                        raise ValueError("Invalid real world function.")
+                # Also, modify the domain to only have numbers between
+                # the dimension of variables.
+                # I have selected a domain of [0, dim-1] since the
+                # 0 is the 1st index and dim-1 is the last index.
+                func["domain"] = (0, dim - 1)
+
+            return real_life_funcs
         case _:
             raise NotImplementedError(
                 f"Invalid scenario. Scenario: {scenario}")
@@ -137,7 +197,7 @@ if __name__ == "__main__":
     # Create the solver
     solver = Solver(
         num_experiments=args.experiments,
-        functions=functions_due_to_scenario(args.scenario)
+        functions=functions_due_to_scenario(args.scenario, dim=args.dimension)
     )
     # ====================================== #
     #                Models                  #
