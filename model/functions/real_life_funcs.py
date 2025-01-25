@@ -37,7 +37,7 @@ def vrp_objective(
     # to return an infinite cost.
     # * HARD CONSTRAINT.
     if len(route) != len(set(route)):
-        return np.inf
+        return int(1e6)  # a very large number...
 
     # Then, iteerate over the calculated route to calculate the total cost.
     for i in range(len(route) - 1):

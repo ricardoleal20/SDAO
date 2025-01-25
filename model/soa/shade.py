@@ -127,11 +127,17 @@ class SHADEwithILS(Algorithm):  # pylint: disable=R0903
                 successful_f = f_pop[:len(archive)]
                 delta_fitness = np.abs(
                     fitness[:len(archive)] - fitness[best_idx])
-
-                self._memory_cr[idx] = np.sum(
-                    delta_fitness * successful_cr) / np.sum(delta_fitness)
-                self._memory_f[idx] = np.sum(
-                    delta_fitness * successful_f) / np.sum(delta_fitness)
+                # Get the sum of the delta fitness and implement it on the memory
+                sum_delta_fitness = np.sum(delta_fitness)
+                if sum_delta_fitness != 0:
+                    self._memory_cr[idx] = np.sum(
+                        delta_fitness * successful_cr) / sum_delta_fitness
+                    self._memory_f[idx] = np.sum(
+                        delta_fitness * successful_f) / sum_delta_fitness
+                else:
+                    # Fill with random values
+                    self._memory_cr[idx] = np.random.uniform(0, 1)
+                    self._memory_f[idx] = np.random.uniform(0, 1)
 
             population = new_population
 
