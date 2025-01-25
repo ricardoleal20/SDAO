@@ -99,16 +99,20 @@ class SDAO(Algorithm):
         # With this, initialize the diff_coeff as the parameter given in the SDAO params
         diff_coeff = self._params["diffusion_coeff"]
         # Run it using the maximum number of iterations
+        improvement = False
         for k in range(self._n_iter):
             # Update each particle
             for particle in particles:
                 # Update the particle
-                particle = self.__update_particle(
+                particle, improvement = self.__update_particle(
                     particle, objective_fn, diff_coeff, bounds)
                 # Check the optimallity of the particle
                 # ! NOTE: To be implemented
             # Update the diffusion coefficient
-            diff_coeff *= np.exp(-self._params["decay_rate"] * k)
+            if improvement:
+                diff_coeff *= np.exp(-self._params["decay_rate"] * k)
+            else:
+                diff_coeff *= np.exp(-self._params["memory_coeff"])
         # Return the best particle found
         best_particle = min(particles, key=lambda x: x.best_value)
         return best_particle.best_value, best_particle.best_position
@@ -122,7 +126,7 @@ class SDAO(Algorithm):
         objective_fn: Callable[[np.ndarray], float | int],
         diff_coeff: float,
         bounds: Sequence[tuple[float, float]] | tuple[float, float]
-    ) -> Particle:
+    ) -> tuple[Particle, bool]:
         """Get the new particle position and value."""
         # With this, update the position
         # Using...
@@ -149,10 +153,12 @@ class SDAO(Algorithm):
         particle.position = new_position
         particle.value = objective_fn(new_position)
         # Update the new best position if the value is better
+        improvement: bool = False
         if particle.value < particle.best_value:
             particle.best_value = particle.value
             particle.best_position = new_position
-        return particle
+            improvement = True
+        return particle, improvement
 
     def __get_disturbance_term(
         self,
