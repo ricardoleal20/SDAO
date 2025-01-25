@@ -307,5 +307,18 @@ if __name__ == "__main__":
     #                Analysis                #
     # ====================================== #
     # Perform an statistical test on the results
-    print("Performing statistical test on the results...")
-    statistical_tests(benchmarks_results, args.latex)
+    if len(benchmarks_results) > 1:
+        # ! ONLY IF WE HAVE MORE THAN 1 ALGORITHM RUNNING, we can
+        # ! perform this statistical test.
+        if args.experiments <= 3:
+            warnings.warn(
+                "\033[93mNot enough experiments to perform a statistical test. " +
+                "Include more experiments using the `-e` flag.\033[0m"
+            )
+        else:
+            print("Performing statistical test on the results...")
+            statistical_tests(benchmarks_results, args.latex)
+    else:
+        # In this case, we don't have enough algorithms to perform a statistical test.
+        warnings.warn(
+            "\033[93mNot enough algorithms to perform a statistical test.\033[0m")
