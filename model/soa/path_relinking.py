@@ -59,7 +59,7 @@ class PathRelinking(Algorithm):
         fn_bounds = [bounds] if isinstance(bounds, tuple) else bounds
         # Initialize population
         population = np.array([
-            [np.random.uniform(low, high) for low, high in fn_bounds]
+            np.random.uniform(low, high, dimension) for low, high in fn_bounds
             for _ in range(self._n_population)
         ])
         fitness = np.array([objective_fn(ind) for ind in population])

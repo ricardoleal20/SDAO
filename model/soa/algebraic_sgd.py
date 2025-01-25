@@ -62,8 +62,9 @@ class AlgebraicSGD(Algorithm):  # pylint: disable=R0903
 
         # Initialize position randomly within bounds
         position = np.array([
-            np.random.uniform(low, high) for low, high in fn_bounds
-        ])
+            np.random.uniform(low, high, dimension)
+            for low, high in fn_bounds
+        ])[0]  # Get the first object... to get the only "particle" moving here
 
         best_position = position.copy()
         best_fitness = objective_fn(position)
