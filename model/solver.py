@@ -8,6 +8,7 @@ In here, we'll select:
     - The number of experiments
 """
 from typing import Callable, TypedDict, Sequence
+from typing_extensions import NotRequired
 import numpy as np
 # Import TQDM for the progress bar
 from tqdm import tqdm
@@ -18,6 +19,7 @@ class ExperimentFunction(TypedDict):
     name: str
     call: Callable[[np.ndarray], float | int]
     domain: tuple[float, float]
+    dimension: NotRequired[int]
 
 
 class BenchmarkResult(TypedDict):
@@ -62,10 +64,12 @@ class Solver:
         """Benchmark the model using the given functions."""
         results: list[BenchmarkResult] = []
         for func in self._functions:
+            # Get the dimension of the function, just in case that
+            # we do not have it on the Experimental Function...
             print(f"Running benchmark for {func['name']}...")
             for i in tqdm(range(self._n_of_exp)):
                 best_value, best_position = model(
-                    func["call"], func["domain"], dimension)
+                    func["call"], func["domain"], func.get("dimension", dimension))
                 # With this, append the results
                 results.append({
                     "iteration": i,

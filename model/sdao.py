@@ -136,8 +136,9 @@ class SDAO(Algorithm):
         memory_term = self._params["memory_coeff"] * \
             (particle.best_position - particle.position)
         # P3: Noisy diffusion term
-        eta = np.random.normal(0, 1, particle.position.shape)
-        stoch_term = np.sqrt(2 * diff_coeff) * eta
+        # Calculate the stoch term using a Heavy-tailed distribution
+        stoch_term = np.sqrt(2 * diff_coeff) * \
+            np.random.laplace(0, 1, particle.position.shape)
 
         new_position = particle.position \
             + disturbance_term + memory_term + stoch_term

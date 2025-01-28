@@ -25,6 +25,24 @@ from model.soa.path_relinking import PathRelinking
 from model.soa.amso import AMSO
 from model.soa.tlpso import TLPSO
 
+# Define the Cities for the VRP problem
+# 0 => New York, 1 => LA, 2 => Chicago, 3 => Houston, 4 => Phoenix
+# 5 => Philadelphia, 6 => San Antonio, 7 => San Diego, 8 => Dallas, 9 => San Jose
+travel_times = np.array([
+    [0, 2550, 780, 1620, 2140, 120, 1700, 2490, 1540, 2600],
+    [2550, 0, 2010, 1370, 380, 2570, 1200, 120, 1440, 340],
+    [780, 2010, 0, 1090, 1730, 860, 1260, 1980, 970, 2100],
+    [1620, 1370, 1090, 0, 1170, 1590, 200, 1300, 240, 1460],
+    [2140, 380, 1730, 1170, 0, 2200, 980, 390, 1050, 650],
+    [120, 2570, 860, 1590, 2200, 0, 1650, 2510, 1520, 2650],
+    [1700, 1200, 1260, 200, 980, 1650, 0, 1280, 280, 1350],
+    [2490, 120, 1980, 1300, 390, 2510, 1280, 0, 1380, 420],
+    [1540, 1440, 970, 240, 1050, 1520, 280, 1380, 0, 1450],
+    [2600, 340, 2100, 1460, 650, 2650, 1350, 420, 1450, 0]
+])
+deadlines = [2400, 3000, 1200, 1800, 2500, 2000, 1600, 2800, 1700, 3200]
+
+
 
 # Some changes for the Matplotlib import
 plt.rcParams['svg.fonttype'] = 'none'
@@ -91,9 +109,7 @@ def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
 
 
 def functions_due_to_scenario(
-    scenario: Literal[0, 1, 2],
-    *,
-    dim: int = 1
+    scenario: Literal[0, 1, 2]
 ) -> list[ExperimentFunction]:
     """Due to the scenario, return the experiment functions to use!"""
     match scenario:
@@ -107,14 +123,18 @@ def functions_due_to_scenario(
             print("Using Scenario 2: Real life functions.")
             # * Here, using the dimension, we're going to generate the variables for
             # * each function....
+            warnings.warn(
+                "\033[93mThe dimension is going to be ignored for this scenario." +
+                "Each example has his own dimension set for the demo.\033[0m"
+            )
             for func in real_life_funcs:
                 match func["name"]:
                     case "Predictive Maintenance":
                         # In this scenario, generate the
                         # failure probabilities to use in the function.
                         # Also, generate the repair costs!
-                        failure_probs = np.random.uniform(0, 1, size=dim)
-                        repair_costs = np.random.uniform(0, 100, size=dim)
+                        failure_probs = np.random.uniform(0, 1, size=30)
+                        repair_costs = np.random.uniform(0, 100, size=30)
                         # And include the maintenance costs
                         func["call"] = partial(
                             func["call"],
@@ -125,41 +145,23 @@ def functions_due_to_scenario(
                     case "VRP":
                         # In this scenario, generate the
                         # travel time matrix to use in the function.
-                        travel_time = np.random.uniform(
-                            30, 100, size=(dim, dim))
-                        np.fill_diagonal(travel_time, 0)
+                        # travel_time = np.random.uniform(
+                        #     30, 100, size=(dim, dim))
+                        # np.fill_diagonal(travel_time, 0)
 
-                        deadlines = np.random.uniform(50, 100, size=dim)
+                        # deadlines = np.random.uniform(50, 100, size=dim)
                         # And include the travel time matrix
                         func["call"] = partial(
                             func["call"],
-                            travel_times=travel_time,  # type: ignore
+                            travel_times=travel_times,  # type: ignore
                             deadlines=deadlines,  # type: ignore
                             traffic_noise_std=0.5  # type: ignore
                         )
                     case "Chemical Experiment":
-                        # Don't do nothing for this chemical experiment,
-                        # the best I can do is to warn the user that
-                        # this function only works with a dimension of 3.
-                        msg = "Chemical Experiment only works with a dimension of 3. "
-                        if dim < 3:
-                            warnings.warn(
-                                msg +
-                                f"Since the dimension is {dim}, we're going to return 0."
-                            )
-                        if dim > 3:
-                            warnings.warn(
-                                msg + f"Since the dimension is {dim}, " +
-                                "we're going to take the first 3 values."
-                            )
+                        # Here, don't do nothing!
+                        pass
                     case _:
                         raise ValueError("Invalid real world function.")
-                # Also, modify the domain to only have numbers between
-                # the dimension of variables.
-                # I have selected a domain of [0, dim-1] since the
-                # 0 is the 1st index and dim-1 is the last index.
-                func["domain"] = (0, dim - 1)
-
             return real_life_funcs
         case _:
             raise NotImplementedError(
@@ -197,7 +199,7 @@ if __name__ == "__main__":
     # Create the solver
     solver = Solver(
         num_experiments=args.experiments,
-        functions=functions_due_to_scenario(args.scenario, dim=args.dimension)
+        functions=functions_due_to_scenario(args.scenario)
     )
     # ====================================== #
     #                Models                  #
@@ -285,7 +287,8 @@ if __name__ == "__main__":
     benchmarks_results: dict[str, list[BenchmarkResult]] = {}
     for i, alg in enumerate(algorithms, start=1):
         NAME = alg.__class__.__name__
-        print(f"Running the {NAME} algorithm... Running {i}/{len(algorithms)}")
+        print(
+            f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms)}\033[0m")
         print(32*"=")
         results = solver.benchmark(
             dimension=args.dimension,
@@ -317,7 +320,11 @@ if __name__ == "__main__":
             )
         else:
             print("Performing statistical test on the results...")
-            statistical_tests(benchmarks_results, args.latex)
+            try:
+                statistical_tests(benchmarks_results, args.latex)
+            except Exception:  # pylint: disable=W0718
+                warnings.warn(
+                    "\033[93mAn error occurred while performing the statistical test.\033[0m")
     else:
         # In this case, we don't have enough algorithms to perform a statistical test.
         warnings.warn(

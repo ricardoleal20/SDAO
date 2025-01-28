@@ -41,7 +41,7 @@ def vrp_objective(
     # to return an infinite cost.
     # * HARD CONSTRAINT.
     if len(route) != len(set(route)):
-        return int(1e6)  # a very large number...
+        return float("1e12")  # a very large number...
 
     # Then, iteerate over the calculated route to calculate the total cost.
     for i in range(len(route) - 1):
@@ -52,13 +52,14 @@ def vrp_objective(
         travel_time = noisy_travel_times[origin][destination]
         current_time += travel_time
 
-        # Add a penalty if the current time is greater than the deadline.
+        # # Add a penalty if the current time is greater than the deadline.
         if current_time > deadlines[destination]:
-            # Quadratic penalty for lateness.
             # The later the delivery, the higher the cost.
-            total_cost += (current_time - deadlines[destination]) ** 2
+            total_cost += current_time - deadlines[destination]
         total_cost += travel_time  # Add the travel time to the total cost.
 
+    # At the end, add one penalty for the last city to return to the depot.
+    total_cost += noisy_travel_times[int(route[-1])][int(route[0])]
     return total_cost
 
 
@@ -150,16 +151,19 @@ real_life_funcs: list["ExperimentFunction"] = [
     {
         "name": "Predictive Maintenance",
         "call": predictive_maintenance_objective,  # type: ignore
-        "domain": (0, 50)
+        "domain": (0, 29),
+        "dimension": 30
     },
     {
         "name": "VRP",
         "call": vrp_objective,  # type: ignore
-        "domain": (0, 50)
+        "domain": (0, 9),
+        "dimension": 10
     },
     {
         "name": "Chemical Experiment",
         "call": chemical_experiment_objective,  # type: ignore
-        "domain": (0, 1000)
+        "domain": (0, 1000),
+        "dimension": 3
     }
 ]  # type: ignore
