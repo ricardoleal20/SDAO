@@ -56,9 +56,11 @@ class SDAO(Algorithm):
     _params: SDAOParams
     _v: bool
     _version: Literal[0, 1, 2]
+    _best_part: Particle
     # Slots of the class
     __slots__ = [
-        "_params", "_n_part", "_v", "_n_iter", "_version"
+        "_params", "_n_part", "_v", "_n_iter", "_version",
+        "_best_part"
     ]
 
     def __init__(  # pylint: disable=R0913
@@ -76,6 +78,8 @@ class SDAO(Algorithm):
         self._params = params
         self._v = verbose
         self._version = version
+        #! DELETE
+        self._best_part = None  # type: ignore
 
     # ====================================== #
     #              Public methods            #
@@ -90,32 +94,46 @@ class SDAO(Algorithm):
         """Optimize the objective function using the SDAO algorithm."""
         # Initialize the particles...
         particles = _init_particles(self._n_part, dimension, bounds)
+
+        # ! NOTE: THIS IS TEMPORAL FOR THE TESTS
+        delta = 0.1
+        gamma_low = 0.3
         # Init the first value of each the particles using the objective function
         for particle in particles:
             obj_value = objective_fn(particle.position)
             particle.value = obj_value
             particle.best_value = obj_value
             particle.best_position = particle.position
+        # Get the best particle
+        self._best_part = min(particles, key=lambda x: x.best_value)
         # With this, initialize the diff_coeff as the parameter given in the SDAO params
         diff_coeff = self._params["diffusion_coeff"]
         # Run it using the maximum number of iterations
-        improvement = False
+        improvement_flag = False
         for k in range(self._n_iter):
+            # Calculate the diversity of the swarm
+            swarm_diversity = _calc_swarm_diversity(particles)
+            memory_k = self._params["memory_coeff"] if swarm_diversity > delta else gamma_low
             # Update each particle
             for particle in particles:
                 # Update the particle
                 particle, improvement = self.__update_particle(
-                    particle, objective_fn, diff_coeff, bounds)
+                    particle, objective_fn,
+                    diff_coeff, memory_k, bounds
+                )
+                # Update the improvement flag
+                improvement_flag = improvement_flag or improvement
                 # Check the optimallity of the particle
                 # ! NOTE: To be implemented
             # Update the diffusion coefficient
-            if improvement:
+            if improvement_flag:
                 diff_coeff *= np.exp(-self._params["decay_rate"] * k)
             else:
                 diff_coeff *= np.exp(-self._params["memory_coeff"])
+            # Get the best particle
+            self._best_part = min(particles, key=lambda x: x.best_value)
         # Return the best particle found
-        best_particle = min(particles, key=lambda x: x.best_value)
-        return best_particle.best_value, best_particle.best_position
+        return self._best_part.best_value, self._best_part.best_position
 
     # ====================================== #
     #             Private methods            #
@@ -125,23 +143,26 @@ class SDAO(Algorithm):
         particle: Particle,
         objective_fn: Callable[[np.ndarray], float | int],
         diff_coeff: float,
+        memory_coeff: float,
         bounds: Sequence[tuple[float, float]] | tuple[float, float]
     ) -> tuple[Particle, bool]:
         """Get the new particle position and value."""
-        # With this, update the position
-        # Using...
         # P1: Disturbance term
         disturbance_term = self.__get_disturbance_term(particle)
         # P2: Memory term
-        memory_term = self._params["memory_coeff"] * \
+        memory_term = memory_coeff * \
             (particle.best_position - particle.position)
         # P3: Noisy diffusion term
         # Calculate the stoch term using a Heavy-tailed distribution
         stoch_term = np.sqrt(2 * diff_coeff) * \
             np.random.laplace(0, 1, particle.position.shape)
+        # ! OPTIONAL AND CAN BE DELETED
+        # Global memory term
+        global_attraction = 0.2 * \
+            (self._best_part.best_position - particle.position)
 
         new_position = particle.position \
-            + disturbance_term + memory_term + stoch_term
+            + disturbance_term + memory_term + stoch_term + global_attraction
         # ANY POSITION OUTSIDE THE BOUNDS WILL BE MOVED TO THE BOUNDARY
         if isinstance(bounds, tuple):
             new_position = np.clip(new_position, *bounds)  # type: ignore
@@ -149,7 +170,6 @@ class SDAO(Algorithm):
             for i, d in enumerate(bounds):
                 new_position[i] = np.clip(new_position[i], *d)  # type: ignore
 
-        new_position = np.clip(new_position, -1, 1)
         # Update the particle position
         particle.position = new_position
         particle.value = objective_fn(new_position)
@@ -208,3 +228,15 @@ def _init_particles(
         best_value=np.inf,
         best_position=np.zeros(dimension)
     ) for _ in range(num_particles)]
+
+
+def _calc_swarm_diversity(particles: list[Particle]) -> float:
+    """Compute a simple measure of swarm diversity:
+       * The average of the dimension-wise standard deviations.
+    """
+    positions = np.array([p.position for p in particles]
+                         )  # shape: (num_particles, dimension)
+    # standard deviation per dimension
+    std_dev = np.std(positions, axis=0)  # shape: (dimension,)
+    # average across all dimensions
+    return float(np.mean(std_dev))
