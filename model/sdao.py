@@ -1,7 +1,7 @@
 """
 Implement the SDAO model in Python.
 """
-from typing import TypedDict, Callable, Sequence, Literal, Optional
+from typing import TypedDict, Callable, Sequence, Literal
 from dataclasses import dataclass
 import numpy as np
 from scipy.spatial import KDTree
@@ -91,16 +91,11 @@ class SDAO(Algorithm):
         objective_fn: Callable[[np.ndarray], float | int],
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
         dimension: int,
-        # Índices de variables discretas
-        discrete_vars: Optional[list[int]] = None
     ) -> tuple[float, np.ndarray]:
         """Optimize the objective function using the SDAO algorithm."""
         # Initialize the particles...
         particles = _init_particles(self._n_part, dimension, bounds)
 
-        # ! NOTE: THIS IS TEMPORAL FOR THE TESTS
-        delta = 0.1
-        gamma_low = 0.3
         # Init the first value of each the particles using the objective function
         for particle in particles:
             obj_value = objective_fn(particle.position)
@@ -116,8 +111,13 @@ class SDAO(Algorithm):
         # Run it using the maximum number of iterations
         for k in range(self._n_iter):
             # Calculate the diversity of the swarm
-            swarm_diversity = _calc_swarm_diversity(particles)
-            memory_k = self._params["memory_coeff"] if swarm_diversity > delta else gamma_low
+            #! WIP: This is necessary? It seems to be a bit complex to calculate...
+            #! and it doesn't apport much to the algorithm...
+            # delta = 0.1
+            # gamma_low = 0.3
+            # swarm_diversity = _calc_swarm_diversity(particles)
+            # memory_k = self._params["memory_coeff"] if swarm_diversity > delta else gamma_low
+            memory_k = self._params["memory_coeff"]
             # Update each particle
             improvement_flag = False
             for particle in particles:
@@ -125,7 +125,7 @@ class SDAO(Algorithm):
                 particle, improvement = self.__update_particle(
                     particle, objective_fn,
                     diff_coeff, memory_k, bounds,
-                    kdtree, discrete_vars
+                    kdtree
                 )
                 # Update the improvement flag
                 improvement_flag = improvement_flag or improvement
@@ -162,12 +162,28 @@ class SDAO(Algorithm):
         memory_coeff: float,
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
         kdtree: KDTree,
-        discrete_vars: Optional[list[int]]
     ) -> tuple[Particle, bool]:
-        """Get the new particle position and value."""
-        # P1: Disturbance term
-        disturbance_term = self.__get_disturbance_term(particle)
-        disturbance_term = 0
+        """Get the new particle position and value.
+        
+        For this, we're going to use the following equation:
+
+        x_i^{k+1} = (
+            + x_i^k : Current position of the particle.
+            + D(x_i^k) : Diffusion term (inspired by 2nd Fick's Law).
+            + delta * (x:{global best} - x_i^k) : Global attraction term
+            + gamma * (x_{best} - x_i^k) : Memory term for the particle
+            + sqrt(2 * D) * Laplace(0, 1) : Noisy diffusion term
+        )
+        """
+        # P1: Diffusion term, directly inspired by 2nd Fick's Law.
+        # Along with this, get a global attraction term. This is going to
+        # replace the Gradient calculation in the original SDAO model.
+        # * Density term
+        density_term = self.__get_diffusion_term(particle, kdtree)
+        # * Global memory term
+        global_attraction = 0.2 * \
+            (self._best_part.best_position - particle.position)
+
         # P2: Memory term
         memory_term = memory_coeff * \
             (particle.best_position - particle.position)
@@ -175,15 +191,11 @@ class SDAO(Algorithm):
         # Calculate the stoch term using a Heavy-tailed distribution
         stoch_term = np.sqrt(2 * diff_coeff) * \
             np.random.laplace(0, 1, particle.position.shape)
-        # # Global memory term
-        global_attraction = 0.2 * \
-            (self._best_part.best_position - particle.position)
-        # Get the diffusion term INSPIRED on the 2nd Fick's Law
-        density_term = self.__get_diffusion_term(particle, kdtree)
 
+        # * Update the position of the particle
         new_position = particle.position \
-            + disturbance_term + memory_term + stoch_term \
-            + density_term + global_attraction
+            + density_term + global_attraction \
+            + memory_term + stoch_term \
         # ANY POSITION OUTSIDE THE BOUNDS WILL BE MOVED TO THE BOUNDARY
         if isinstance(bounds, tuple):
             new_position = np.clip(new_position, *bounds)  # type: ignore
@@ -191,20 +203,7 @@ class SDAO(Algorithm):
             for i, d in enumerate(bounds):
                 new_position[i] = np.clip(new_position[i], *d)  # type: ignore
 
-        # Si hay variables discretas, aplicarlas
-        if discrete_vars:
-            for idx in discrete_vars:
-                # Por ejemplo, redondear a entero más cercano
-                new_position[idx] = np.round(new_position[idx])
-            # Opcional: Reparar posiciones que exceden los límites después de la discretización
-            if isinstance(bounds, tuple):
-                new_position = np.clip(new_position, *bounds)  # type: ignore
-            else:
-                for i, d in enumerate(bounds):
-                    new_position[i] = np.clip(
-                        new_position[i], *d)  # type: ignore
-
-        # Actualizar la posición de la partícula
+        # Update the particle position and value
         particle.position = new_position
         particle.value = objective_fn(new_position)
         # Update the best position if the value is better
@@ -214,36 +213,6 @@ class SDAO(Algorithm):
             particle.best_position = new_position.copy()
             improvement = True
         return particle, improvement
-
-    def __get_disturbance_term(
-        self,
-        particle: Particle,
-    ) -> np.ndarray | float:
-        """Get the disturbance term for the particle."""
-        # Depending on the SDAO version, we'll use different methods...
-        match self._version:
-            case 0:
-                # This version still use the gradient of the function for this
-                # particle
-                grad = np.gradient(particle.value)
-                if grad.any():
-                    return -self._params["learning_rate"] * grad
-                return np.zeros(particle.position.shape)
-            case 1:
-                # Use the method of:
-                #  * alpha * sign(f(x) - f(x_best))
-                #  * sign(f(x) - f(x_best)) = 1 if f(x) < f(x_best) else -1
-                sign = 1 if particle.value < particle.best_value else -1
-                return self._params["learning_rate"] * sign
-            case 2:
-                # Use adaptive noise term
-                noise = np.random.normal(0, 1, size=particle.position.shape)
-                sign = 1 if noise[0] < noise[1] else -1
-                return self._params["learning_rate"] * sign
-            case _:
-                raise ValueError(
-                    f"Invalid version for the SDAO model. Version: {self._version}"
-                )
 
     def __get_diffusion_term(
         self,
