@@ -99,7 +99,7 @@ def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
             # * Note: The log is to convert the values to a better scale
             # * for visualization purposes.
             # * This is going to standardize the values to a log scale.
-            # func: np.log10(1+np.mean([res["best_value"] for res in results]))
+            # func: np.log10(np.mean([res["best_value"] for res in results]))
             for func, results in _py.group_by(bench, lambda x: x["function"]).items()
         }
         bench_results[alg_name] = values
@@ -157,11 +157,8 @@ def functions_due_to_scenario(
                             deadlines=deadlines,  # type: ignore
                             traffic_noise_std=0.5  # type: ignore
                         )
-                    case "Chemical Experiment":
-                        # Here, don't do nothing!
-                        pass
                     case _:
-                        raise ValueError("Invalid real world function.")
+                        pass
             return real_life_funcs
         case _:
             raise NotImplementedError(
@@ -212,7 +209,7 @@ if __name__ == "__main__":
             "learning_rate": 0.01,
             "memory_coeff": 0.5,
             "decay_rate": 0.01,
-            "diffusion_coeff": 1
+            "diffusion_coeff": 1,
         },
         verbose=args.verbose
     )
@@ -262,9 +259,10 @@ if __name__ == "__main__":
     match args.algorithm:
         case "all":
             algorithms = [
-                sdao, sfs, sgd,
+                sdao,
+                # sfs, sgd,
                 shade, path_relinking,
-                amso, tlpso
+                # amso, tlpso
             ]
         case "sdao":
             algorithms = [sdao]

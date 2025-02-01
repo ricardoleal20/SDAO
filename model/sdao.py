@@ -104,10 +104,11 @@ class SDAO(Algorithm):
             particle.value = obj_value
             particle.best_value = obj_value
             particle.best_position = particle.position.copy()
-            particle.velocity = np.zeros(dimension)
         # Apply OBL during initialization
-        particles = self.__apply_obl(
-            particles, objective_fn, bounds)
+        particles = [self.__apply_obl(
+            particle, objective_fn, bounds)
+            for particle in particles
+        ]
 
         # Get the best particle
         self._best_part = min(particles, key=lambda x: x.best_value)
@@ -117,27 +118,19 @@ class SDAO(Algorithm):
         diff_coeff = self._params["diffusion_coeff"]
         # Run it using the maximum number of iterations
         for k in range(self._n_iter):
-            # Calculate the diversity of the swarm
-            #! WIP: This is necessary? It seems to be a bit complex to calculate...
-            #! and it doesn't apport much to the algorithm...
-            # delta = 0.1
-            # gamma_low = 0.3
-            # swarm_diversity = _calc_swarm_diversity(particles)
-            # memory_k = self._params["memory_coeff"] if swarm_diversity > delta else gamma_low
-            memory_k = self._params["memory_coeff"]
             # Update each particle
             improvement_flag = False
             for particle in particles:
                 # Update the particle
                 particle, improvement = self.__update_particle(
                     particle, objective_fn,
-                    diff_coeff, memory_k, bounds,
+                    diff_coeff, bounds,
                     kdtree
                 )
                 # Update the improvement flag
                 improvement_flag = improvement_flag or improvement
                 # Apply OBL after update
-                particle = self.__apply_obl_single(
+                particle = self.__apply_obl(
                     particle, objective_fn, bounds)
 
             # ! DELETE: Dynamic parameter adjustment
@@ -172,7 +165,6 @@ class SDAO(Algorithm):
         particle: Particle,
         objective_fn: Callable[[np.ndarray], float | int],
         diff_coeff: float,
-        memory_coeff: float,
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
         kdtree: KDTree,
     ) -> tuple[Particle, bool]:
@@ -197,7 +189,7 @@ class SDAO(Algorithm):
         global_attraction = self._params["learning_rate"] * \
             (self._best_part.best_position - particle.position)
         # P2: Memory term
-        memory_term = memory_coeff * \
+        memory_term = self._params["memory_coeff"] * \
             (particle.best_position - particle.position)
         # P3: Noisy diffusion term
         # Calculate the stoch term using a Heavy-tailed distribution
@@ -259,34 +251,16 @@ class SDAO(Algorithm):
 
     def __apply_obl(
         self,
-        particles: list[Particle],
-        objective_fn: Callable[[np.ndarray], float | int],
-        bounds: Sequence[tuple[float, float]] | tuple[float, float],
-    ) -> list[Particle]:
-        """Apply Opposition-Based Learning (OBL) during initialization."""
-        new_particles = []
-        for particle in particles:
-            # Generate the opposite position
-            opposite_position = self.__generate_opposite_position(
-                particle.position, bounds)
-            # Evaluate the opposite position
-            opposite_value = objective_fn(opposite_position)
-            # Compare and keep the better position
-            if opposite_value < particle.value:
-                particle.position = opposite_position
-                particle.value = opposite_value
-                particle.best_position = opposite_position.copy()
-                particle.best_value = opposite_value
-            new_particles.append(particle)
-        return new_particles
-
-    def __apply_obl_single(
-        self,
         particle: Particle,
         objective_fn: Callable[[np.ndarray], float | int],
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
     ) -> Particle:
-        """Apply Opposition-Based Learning (OBL) for a single particle."""
+        """Apply Opposition-Based Learning (OBL) for a single particle.
+        
+        The OBL is a technique that generates the opposite position of a
+        particle and evaluates it. If the opposite position is better than
+        the current position, the particle is updated.
+        """
         # Generate the opposite position
         opposite_position = self.__generate_opposite_position(
             particle.position, bounds)
@@ -316,13 +290,6 @@ class SDAO(Algorithm):
             for i, (lower, upper) in enumerate(bounds):
                 opposite_position[i] = lower + upper - position[i]
         return opposite_position
-
-    def _calc_current_swarm_diversity(self) -> float:
-        """Calculate the current diversity of the swarm."""
-        # Reuse the existing helper method
-        # Temporarily using best_part
-        return _calc_swarm_diversity([self._best_part])
-
 
 # ====================================== #
 #              Helper methods            #
