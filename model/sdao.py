@@ -62,6 +62,7 @@ class SDAO(Algorithm):
     __slots__ = [
         "_params", "_n_part", "_v", "_n_iter", "_version",
         "_best_part",
+        "_delta"
     ]
 
     def __init__(  # pylint: disable=R0913
@@ -81,6 +82,7 @@ class SDAO(Algorithm):
         self._version = version
         #! DELETE
         self._best_part = None  # type: ignore
+        self._delta = 0.2
 
     # ====================================== #
     #              Public methods            #
@@ -102,9 +104,14 @@ class SDAO(Algorithm):
             particle.value = obj_value
             particle.best_value = obj_value
             particle.best_position = particle.position.copy()
+            particle.velocity = np.zeros(dimension)
+        # Apply OBL during initialization
+        particles = self.__apply_obl(
+            particles, objective_fn, bounds)
+
         # Get the best particle
         self._best_part = min(particles, key=lambda x: x.best_value)
-        # Construir KDTree para la búsqueda eficiente de vecinos
+        # Build the KDTree for efficient neighbor search
         kdtree = KDTree([p.position for p in particles])
         # With this, initialize the diff_coeff as the parameter given in the SDAO params
         diff_coeff = self._params["diffusion_coeff"]
@@ -129,14 +136,20 @@ class SDAO(Algorithm):
                 )
                 # Update the improvement flag
                 improvement_flag = improvement_flag or improvement
+                # Apply OBL after update
+                particle = self.__apply_obl_single(
+                    particle, objective_fn, bounds)
+
+            # ! DELETE: Dynamic parameter adjustment
+            # if (k + 1) % self._params.get("adjust_interval", 10) == 0:
+            #     self.__adjust_parameters(k, swarm_diversity)
             # Update the diffusion coefficient
             if improvement_flag:
                 diff_coeff *= np.exp(-self._params["decay_rate"] * k)
             else:
                 diff_coeff *= np.exp(-self._params["memory_coeff"])
-            # Actualizar el KDTree con las nuevas posiciones
+            # Update the KD Tree for the new positions of the particles
             kdtree = KDTree([p.position for p in particles])
-
             # Get the best particle
             current_best_part = min(particles, key=lambda x: x.best_value)
             # Evalaute if this is better than the current best particle
@@ -181,9 +194,8 @@ class SDAO(Algorithm):
         # * Density term
         density_term = self.__get_diffusion_term(particle, kdtree)
         # * Global memory term
-        global_attraction = 0.2 * \
+        global_attraction = self._params["learning_rate"] * \
             (self._best_part.best_position - particle.position)
-
         # P2: Memory term
         memory_term = memory_coeff * \
             (particle.best_position - particle.position)
@@ -191,11 +203,11 @@ class SDAO(Algorithm):
         # Calculate the stoch term using a Heavy-tailed distribution
         stoch_term = np.sqrt(2 * diff_coeff) * \
             np.random.laplace(0, 1, particle.position.shape)
-
         # * Update the position of the particle
         new_position = particle.position \
             + density_term + global_attraction \
-            + memory_term + stoch_term \
+            + memory_term + stoch_term
+
         # ANY POSITION OUTSIDE THE BOUNDS WILL BE MOVED TO THE BOUNDARY
         if isinstance(bounds, tuple):
             new_position = np.clip(new_position, *bounds)  # type: ignore
@@ -245,6 +257,73 @@ class SDAO(Algorithm):
         # Ensure the gradient is in the right direction by scaling it
         return density_gradient * self._params["diffusion_coeff"]
 
+    def __apply_obl(
+        self,
+        particles: list[Particle],
+        objective_fn: Callable[[np.ndarray], float | int],
+        bounds: Sequence[tuple[float, float]] | tuple[float, float],
+    ) -> list[Particle]:
+        """Apply Opposition-Based Learning (OBL) during initialization."""
+        new_particles = []
+        for particle in particles:
+            # Generate the opposite position
+            opposite_position = self.__generate_opposite_position(
+                particle.position, bounds)
+            # Evaluate the opposite position
+            opposite_value = objective_fn(opposite_position)
+            # Compare and keep the better position
+            if opposite_value < particle.value:
+                particle.position = opposite_position
+                particle.value = opposite_value
+                particle.best_position = opposite_position.copy()
+                particle.best_value = opposite_value
+            new_particles.append(particle)
+        return new_particles
+
+    def __apply_obl_single(
+        self,
+        particle: Particle,
+        objective_fn: Callable[[np.ndarray], float | int],
+        bounds: Sequence[tuple[float, float]] | tuple[float, float],
+    ) -> Particle:
+        """Apply Opposition-Based Learning (OBL) for a single particle."""
+        # Generate the opposite position
+        opposite_position = self.__generate_opposite_position(
+            particle.position, bounds)
+        # Evaluate the opposite position
+        opposite_value = objective_fn(opposite_position)
+        # Compare and keep the better position
+        if opposite_value < particle.value:
+            particle.position = opposite_position
+            particle.value = opposite_value
+            # Update the best position if necessary
+            if opposite_value < particle.best_value:
+                particle.best_position = opposite_position.copy()
+                particle.best_value = opposite_value
+        return particle
+
+    def __generate_opposite_position(
+        self,
+        position: np.ndarray,
+        bounds: Sequence[tuple[float, float]] | tuple[float, float]
+    ) -> np.ndarray:
+        """Generate the opposite position for a given particle position."""
+        opposite_position = np.empty_like(position)
+        if isinstance(bounds, tuple):
+            lower, upper = bounds
+            opposite_position = lower + upper - position  # type: ignore
+        else:
+            for i, (lower, upper) in enumerate(bounds):
+                opposite_position[i] = lower + upper - position[i]
+        return opposite_position
+
+    def _calc_current_swarm_diversity(self) -> float:
+        """Calculate the current diversity of the swarm."""
+        # Reuse the existing helper method
+        # Temporarily using best_part
+        return _calc_swarm_diversity([self._best_part])
+
+
 # ====================================== #
 #              Helper methods            #
 # ====================================== #
@@ -260,7 +339,7 @@ def _init_particles(
         position=np.random.uniform(*bounds, size=dimension),
         value=np.inf,
         best_value=np.inf,
-        best_position=np.zeros(dimension)
+        best_position=np.zeros(dimension),
     ) for _ in range(num_particles)]
 
 
