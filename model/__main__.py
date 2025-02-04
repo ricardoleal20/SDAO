@@ -95,7 +95,7 @@ def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
     for alg_name, bench in benchmarks.items():
         # Extract the mean best values for each algorithm
         values = {
-            func: np.min([res["best_value"] for res in results])
+            func: np.mean([res["best_value"] for res in results])
             # * Note: The log is to convert the values to a better scale
             # * for visualization purposes.
             # * This is going to standardize the values to a log scale.
@@ -260,9 +260,9 @@ if __name__ == "__main__":
         case "all":
             algorithms = [
                 sdao,
-                # sfs, sgd,
+                sfs, sgd,
                 shade, path_relinking,
-                # amso, tlpso
+                amso, tlpso
             ]
         case "sdao":
             algorithms = [sdao]

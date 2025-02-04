@@ -145,6 +145,103 @@ def chemical_experiment_objective(
     return -noisy_yield
 
 
+# Add this constants for the Financial Problem implementation
+# Example expected returns vector and covariance matrix for n assets.
+# In a real-world scenario, these would be estimated from historical data.
+mu = np.array([0.10, 0.12, 0.08, 0.07])  # Expected returns for 4 assets
+Sigma = np.array([
+    [0.005, -0.010, 0.004, 0.002],
+    [-0.010, 0.040, -0.002, 0.003],
+    [0.004, -0.002, 0.023, 0.002],
+    [0.002, 0.003, 0.002, 0.018]
+])
+
+# Trade-off parameter (lambda) between risk and return.
+# A higher lambda puts more weight on return.
+LAMBDA_TRADEOFF = 0.5
+
+
+def financial_portfolio_objective(x: np.ndarray) -> float:
+    """Objective function for financial portfolio optimization.
+    
+    The function normalizes x so that the weights sum to 1 (if sum > 0)
+    and penalizes any negative weights.
+    It then computes:
+    
+        f(x) = (portfolio variance) - lambda_tradeoff * (portfolio expected return)
+    
+    Lower f(x) is better.
+
+    Args:
+        x: np.ndarray of shape (n_assets,)
+           A candidate solution representing portfolio weights.    
+    """
+    # Enforce non-negativity; penalize negative weights heavily.
+    if np.any(x < 0):
+        return 1e6 + np.sum(np.abs(x[x < 0]))  # A large penalty
+
+    # Normalize the portfolio weights to sum to one
+    total = np.sum(x)
+    if total > 0:
+        x_norm: np.ndarray = x / total  # type: ignore
+    else:
+        x_norm = x
+
+    # Calculate portfolio variance (risk)
+    variance: np.ndarray = x_norm.T @ Sigma @ x_norm
+
+    # Calculate portfolio expected return
+    expected_return = x_norm.T @ mu
+
+    # Define the objective as risk minus lambda_tradeoff times return.
+    # (Since we are minimizing the function, a lower value indicates lower risk and higher return.)
+    objective_value = variance - LAMBDA_TRADEOFF * expected_return
+    return -objective_value  # type: ignore
+
+
+# Constants for the microgrid energy management problem
+DEMAND = 100.0             # Demand required in MW
+RENEWABLE = 60.0           # Renewable generation in MW
+GRID_COST = 50.0           # Cost per mW of grid usage
+BATTERY_COST = 30.0        # Cost for battery usage
+PENALTY_MICROGRID = 1000.0    # Penalty factor for unmet demand
+
+
+def microgrid_objective(x: np.ndarray) -> float:
+    """Objective function for energy management in a microgrid.
+    
+    Candidate solution x is a vector where:
+      x[0]: Power drawn from the grid (MW)
+      x[1]: Battery discharge (MW)
+      x[2]: Battery charge (MW)
+      
+    The net supply is given by:
+      supply = renewable_generation + grid_usage + battery_discharge - battery_charge
+    
+    We aim to minimize the total cost:
+      cost = grid_cost * grid_usage + battery_cost * (battery_discharge + battery_charge)
+             + penalty_factor * (unmet_demand)
+    
+    If supply < demand, a heavy penalty is added.
+    Negative values are penalized para evitar soluciones inviables.
+    """
+    # Verify that there's no negative values (negative energy usage is not allowed)
+    if np.any(x < 0):
+        return 1e6 + np.sum(np.abs(x[x < 0]))
+
+    # Calculate the net supply: sum of renewable generation, grid usage, battery discharge,
+    # minus battery charge, and penalize if the demand is not met.
+    supply = RENEWABLE + x[0] + x[1] - x[2]
+
+    # Penalización si la oferta no satisface la demanda
+    # Penalty if the offer doesn't satisfy the demand
+    unmet_demand = max(0, DEMAND - supply)
+    penalty = PENALTY_MICROGRID * unmet_demand
+
+    # Total cost: sum of costs for energy taken from the grid
+    # and battery usage, plus the penalty
+    return GRID_COST * x[0] + BATTERY_COST * (x[1] + x[2]) + penalty
+
 # ========================================================= #
 # DEFINE ALL THE STOCH FUNCTIONS WITH THEIR NAME AND DOMAIN #
 real_life_funcs: list["ExperimentFunction"] = [
@@ -164,6 +261,18 @@ real_life_funcs: list["ExperimentFunction"] = [
         "name": "Chemical Experiment",
         "call": chemical_experiment_objective,  # type: ignore
         "domain": (0, 1000),
+        "dimension": 3
+    },
+    # {
+    #     "name": "Financial Portfolio",
+    #     "call": financial_portfolio_objective,
+    #     "domain": (0, 1),
+    #     "dimension": 4
+    # },
+    {
+        "name": "Microgrid Energy Management",
+        "call": microgrid_objective,
+        "domain": (0, 100),
         "dimension": 3
     }
 ]  # type: ignore
