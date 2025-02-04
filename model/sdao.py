@@ -60,9 +60,8 @@ class SDAO(Algorithm):
     _best_part: Particle
     # Slots of the class
     __slots__ = [
-        "_params", "_n_part", "_v", "_n_iter", "_version",
-        "_best_part",
-        "_delta"
+        "_params", "_n_part", "_v", "_n_iter",
+        "_version", "_best_part",
     ]
 
     def __init__(  # pylint: disable=R0913
@@ -79,10 +78,9 @@ class SDAO(Algorithm):
         # Initialize the parameters...
         self._params = params
         self._v = verbose
-        self._version = version
-        #! DELETE
+        self._version = version  # deprecated!
+        # Add the best particule as None
         self._best_part = None  # type: ignore
-        self._delta = 0.2
 
     # ====================================== #
     #              Public methods            #
@@ -95,6 +93,9 @@ class SDAO(Algorithm):
         dimension: int,
     ) -> tuple[float, np.ndarray]:
         """Optimize the objective function using the SDAO algorithm."""
+        # Save original bounds for later contraction
+        original_bounds = bounds if isinstance(bounds, tuple) else list(bounds)
+
         # Initialize the particles...
         particles = _init_particles(self._n_part, dimension, bounds)
 
@@ -132,15 +133,16 @@ class SDAO(Algorithm):
                 # Apply OBL after update
                 particle = self.__apply_obl(
                     particle, objective_fn, bounds)
-
-            # ! DELETE: Dynamic parameter adjustment
-            # if (k + 1) % self._params.get("adjust_interval", 10) == 0:
-            #     self.__adjust_parameters(k, swarm_diversity)
             # Update the diffusion coefficient
             if improvement_flag:
                 diff_coeff *= np.exp(-self._params["decay_rate"] * k)
             else:
                 diff_coeff *= np.exp(-self._params["memory_coeff"])
+            # # Every fixed number of iterations, contract the domain
+            # if (k + 1) % 20 == 0:  # Do it every 20 iterations ! Maybe a parameter?
+            #     bounds = self.__contract_bounds(
+            #         original_bounds, self._best_part.best_position)
+
             # Update the KD Tree for the new positions of the particles
             kdtree = KDTree([p.position for p in particles])
             # Get the best particle
@@ -290,6 +292,29 @@ class SDAO(Algorithm):
             for i, (lower, upper) in enumerate(bounds):
                 opposite_position[i] = lower + upper - position[i]
         return opposite_position
+
+    def __contract_bounds(
+        self,
+        original_bounds: Sequence[tuple[float, float]] | tuple[float, float],
+        best_position: np.ndarray
+    ) -> Sequence[tuple[float, float]]:
+        """Contract the search bounds based on the best global solution.
+        
+        For each dimension j:
+          new_lower_j = best_position_j - delta * (best_position_j - original_lower_j)
+          new_upper_j = best_position_j + delta * (original_upper_j - best_position_j)
+        """
+        new_bounds = []
+        if isinstance(original_bounds, tuple):
+            bounds = [original_bounds]  # type: ignore
+        else:
+            bounds: list[tuple[float, float]] = original_bounds  # type: ignore
+        for j, (lower, upper) in enumerate(bounds):
+            best = best_position[j]
+            new_lower = best - self._params["memory_coeff"] * (best - lower)
+            new_upper = best + self._params["memory_coeff"] * (upper - best)
+            new_bounds.append((new_lower, new_upper))
+        return new_bounds
 
 # ====================================== #
 #              Helper methods            #
