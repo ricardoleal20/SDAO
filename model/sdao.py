@@ -34,6 +34,8 @@ class Particle:
     value: float  # The value of the objective function for this particle
     best_value: float  # The best value found in the particle
     best_position: np.ndarray  # The best position found by this particle
+    stagnation_counter: int  # Counter for consecutive iterations without improvement
+
 
 
 class SDAO(Algorithm):
@@ -128,20 +130,42 @@ class SDAO(Algorithm):
                     diff_coeff, bounds,
                     kdtree
                 )
-                # Update the improvement flag
+                # Based on the improvement, update the stagnation counter
+                # of the particle
+                if improvement:
+                    # If the particle improved, reset the stagnation counter
+                    # to zero, this to reduce their probability of applying OBL
+                    # in the next iterations.
+                    particle.stagnation_counter = 0
+                else:
+                    # Add one to the stagnation counter
+                    particle.stagnation_counter += 1
+                    # * Apply OBL based on the stagnation counter.
+                    # * The probability of applying OBL is defined as: P = 1 - exp(-λ * SC)
+                    # * where SC is the stagnation counter of this specific particle.
+                    prob_obl = 1 - \
+                        np.exp(-self._params["decay_rate"]
+                               * particle.stagnation_counter)
+                    # * Generate a random number in [0, 1] to decide if OBL is applied.
+                    if np.random.rand() < prob_obl:
+                        particle = self.__apply_obl(
+                            particle, objective_fn, bounds)
+
+                # Update the particle improvement flag if needed
                 improvement_flag = improvement_flag or improvement
-                # Apply OBL after update
-                particle = self.__apply_obl(
-                    particle, objective_fn, bounds)
+
             # Update the diffusion coefficient
             if improvement_flag:
+                # If there was an improvement, update the diffusion coefficient
+                # only using the decay rate. Following the equation:
+                # D(k) = D_0 * exp(-beta * k)
                 diff_coeff *= np.exp(-self._params["decay_rate"] * k)
             else:
                 diff_coeff *= np.exp(-self._params["memory_coeff"])
             # # Every fixed number of iterations, contract the domain
-            # if (k + 1) % 20 == 0:  # Do it every 20 iterations ! Maybe a parameter?
-            #     bounds = self.__contract_bounds(
-            #         original_bounds, self._best_part.best_position)
+            if (k + 1) % 20 == 0:  # Do it every 20 iterations ! Maybe a parameter?
+                bounds = self.__contract_bounds(
+                    original_bounds, self._best_part.best_position)
 
             # Update the KD Tree for the new positions of the particles
             kdtree = KDTree([p.position for p in particles])
@@ -154,7 +178,7 @@ class SDAO(Algorithm):
             # Optional: Print progress ONLY if verbose is enabled
             if self._v and (k % 10 == 0 or k == self._n_iter - 1):
                 print(
-                    f"Iteración {k}: Mejor Valor = {self._best_part.best_value}")
+                    f"Iteration [{k}] | Best Value = {self._best_part.best_value}")
 
         # Return the best particle found
         return self._best_part.best_value, self._best_part.best_position
@@ -332,6 +356,7 @@ def _init_particles(
         value=np.inf,
         best_value=np.inf,
         best_position=np.zeros(dimension),
+        stagnation_counter=0
     ) for _ in range(num_particles)]
 
 
