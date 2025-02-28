@@ -31,3 +31,7 @@ results/
 *.pyo
 __pycache__/
 
+
+# Ignore the .txt and .tex files
+*.tex
+*.txt
