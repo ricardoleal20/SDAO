@@ -154,14 +154,35 @@ class SDAO(Algorithm):
                 # Update the particle improvement flag if needed
                 improvement_flag = improvement_flag or improvement
 
-            # Update the diffusion coefficient
-            if improvement_flag:
-                # If there was an improvement, update the diffusion coefficient
-                # only using the decay rate. Following the equation:
-                # D(k) = D_0 * exp(-beta * k)
-                diff_coeff *= np.exp(-self._params["decay_rate"] * k)
+            # Get the swarm diversity for the particles and their global density
+            diversity = _calc_swarm_diversity(particles)
+            global_density = _calc_global_density(particles)
+
+            delta_min = self._params["diffusion_coeff"] * 0.1
+            delta_max = self._params["diffusion_coeff"]
+            # Calculate the weight for the transition between methods
+            if diversity <= delta_min:
+                # If the diversity is below the minimum, the weight is 1.0
+                weight = 1.0
+            elif diversity >= delta_max:
+                # Otherwise, if the diversity is higher than the maximum,
+                # the weight is 0.0
+                weight = 0.0
             else:
-                diff_coeff *= np.exp(-self._params["memory_coeff"])
+                # And, if the diversity is between the minimum and maximum,
+                # we calculate the weight using the formula:
+                # w = (delta_max - diversity) / (delta_max - delta_min)
+                weight = (delta_max - diversity) / (delta_max - delta_min)
+
+            # * Update the diffusion coefficient for the next iteration...
+            # Method 1: Time-based decay
+            diff_time_based = self._params["diffusion_coeff"] * \
+                np.exp(-self._params["decay_rate"] * k)
+            # Method 2: Improved decay with density
+            diff_density_based = diff_time_based * (1 + 0.5 * global_density)
+            # Dynamic selection of the diffusion coefficient
+            diff_coeff = diff_time_based + weight * \
+                (diff_density_based - diff_time_based)
             # # Every fixed number of iterations, contract the domain
             if (k + 1) % 20 == 0:  # Do it every 20 iterations ! Maybe a parameter?
                 bounds = self.__contract_bounds(
@@ -220,7 +241,7 @@ class SDAO(Algorithm):
         # P3: Noisy diffusion term
         # Calculate the stoch term using a Heavy-tailed distribution
         stoch_term = np.sqrt(2 * diff_coeff) * \
-            np.random.laplace(0, 1, particle.position.shape)
+            np.random.uniform(0, 1, particle.position.shape)
         # * Update the position of the particle
         new_position = particle.position \
             + density_term + global_attraction \
@@ -328,17 +349,28 @@ class SDAO(Algorithm):
           new_lower_j = best_position_j - delta * (best_position_j - original_lower_j)
           new_upper_j = best_position_j + delta * (original_upper_j - best_position_j)
         """
+        # Create the array for the new bounds...
         new_bounds = []
+        # The bounds are the same for all dimensions, so we modify them as a list
         if isinstance(original_bounds, tuple):
             bounds = [original_bounds]  # type: ignore
+            was_tuple: bool = True
         else:
             bounds: list[tuple[float, float]] = original_bounds  # type: ignore
+            was_tuple = False
+        # We iterate over the bounds to update them. We are not going further the original
+        # bounds. For example, having a bounds of (-5, 5) we cannot have bounds of (-6, 6)
+        # or something else. We are just contracting the bounds INSIDE the original bounds.
         for j, (lower, upper) in enumerate(bounds):
+            # Get the best position for this dimension
             best = best_position[j]
+            # Update the new bounds for the lower and upper.
             new_lower = best - self._params["memory_coeff"] * (best - lower)
             new_upper = best + self._params["memory_coeff"] * (upper - best)
+            # Append the new bounds
             new_bounds.append((new_lower, new_upper))
-        return new_bounds
+        # Depending on the flag, return the bounds as a tuple or as a list
+        return new_bounds[0] if was_tuple else new_bounds
 
 # ====================================== #
 #              Helper methods            #
@@ -370,3 +402,13 @@ def _calc_swarm_diversity(particles: list[Particle]) -> float:
     std_dev = np.std(positions, axis=0)  # shape: (dimension,)
     # average across all dimensions
     return float(np.mean(std_dev))
+
+
+def _calc_global_density(particles: list[Particle]) -> float:
+    """Compute the global density of the swarm based on the occupied volume."""
+    positions = np.array([p.position for p in particles])
+    min_vals = np.min(positions, axis=0)
+    max_vals = np.max(positions, axis=0)
+    volume = np.prod(max_vals - min_vals)  # Compute hypervolume
+    # Avoid division by zero
+    return len(particles) / volume if volume > 0 else 1.0

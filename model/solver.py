@@ -63,10 +63,12 @@ class Solver:
     ) -> list[BenchmarkResult]:
         """Benchmark the model using the given functions."""
         results: list[BenchmarkResult] = []
-        for func in self._functions:
+        total_functions = len(self._functions)
+        for i, func in enumerate(self._functions, start=1):
             # Get the dimension of the function, just in case that
             # we do not have it on the Experimental Function...
-            print(f"Running benchmark for {func['name']}...")
+            print(
+                f"Running benchmark for {func['name']}... {i/total_functions:.2%}")
             for i in tqdm(range(self._n_of_exp)):
                 best_value, best_position = model(
                     func["call"], func["domain"], func.get("dimension", dimension))

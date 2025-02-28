@@ -13,8 +13,6 @@ import pandas as pd
 from model.solver import BenchmarkResult
 
 # Classes
-
-
 class AnovaResult(TypedDict):
     """Result of the ANOVA test."""
     function: str
@@ -168,6 +166,9 @@ def _post_hoc_test(
     # Drop the columns lower and upper
     return pd.DataFrame(
         sdao_comparisons,
-        columns=["Algorithm 1", "Algorithm 2",
-                 "Median Difference", "p", "Significant", "lower", "upper"]
+        columns=[
+            "Algorithm 1", "Algorithm 2", # type: ignore
+            "Median Difference", "p", "Significant",
+            "lower", "upper"
+        ]
     )
