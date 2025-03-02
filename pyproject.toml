@@ -28,7 +28,7 @@ reportMissingTypeStubs = false
 reportMissingImports = false
 
 [tool.black]
-line-length = 88
+line-length = 100
 include = '\.pyi?$'
 exclude = '''
 /(
