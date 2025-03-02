@@ -39,8 +39,9 @@ def vrp_objective(
     route = np.round(route, 0)
     # in case that we've repeated cities in the route, we're going
     # to return an infinite cost.
-    # * HARD CONSTRAINT.
-    if len(route) != len(set(route)):
+    # * HARD CONSTRAINT. If the route doesn't have the same length as the deadlines,
+    # * we're going to return a very large number to avoid this solution.
+    if len(route) != len(set(route)) or len(route) != len(deadlines):
         return float("1e12")  # a very large number...
 
     # Then, iteerate over the calculated route to calculate the total cost.
@@ -163,18 +164,18 @@ LAMBDA_TRADEOFF = 0.5
 
 def financial_portfolio_objective(x: np.ndarray) -> float:
     """Objective function for financial portfolio optimization.
-    
+
     The function normalizes x so that the weights sum to 1 (if sum > 0)
     and penalizes any negative weights.
     It then computes:
-    
+
         f(x) = (portfolio variance) - lambda_tradeoff * (portfolio expected return)
-    
+
     Lower f(x) is better.
 
     Args:
         x: np.ndarray of shape (n_assets,)
-           A candidate solution representing portfolio weights.    
+           A candidate solution representing portfolio weights.
     """
     # Enforce non-negativity; penalize negative weights heavily.
     if np.any(x < 0):
@@ -209,19 +210,19 @@ PENALTY_MICROGRID = 1000.0    # Penalty factor for unmet demand
 
 def microgrid_objective(x: np.ndarray) -> float:
     """Objective function for energy management in a microgrid.
-    
+
     Candidate solution x is a vector where:
       x[0]: Power drawn from the grid (MW)
       x[1]: Battery discharge (MW)
       x[2]: Battery charge (MW)
-      
+
     The net supply is given by:
       supply = renewable_generation + grid_usage + battery_discharge - battery_charge
-    
+
     We aim to minimize the total cost:
       cost = grid_cost * grid_usage + battery_cost * (battery_discharge + battery_charge)
              + penalty_factor * (unmet_demand)
-    
+
     If supply < demand, a heavy penalty is added.
     Negative values are penalized para evitar soluciones inviables.
     """
@@ -263,12 +264,12 @@ real_life_funcs: list["ExperimentFunction"] = [
         "domain": (0, 1000),
         "dimension": 3
     },
-    # {
-    #     "name": "Financial Portfolio",
-    #     "call": financial_portfolio_objective,
-    #     "domain": (0, 1),
-    #     "dimension": 4
-    # },
+    {
+         "name": "Financial Portfolio",
+         "call": financial_portfolio_objective,
+         "domain": (0, 1),
+         "dimension": 4
+    },
     {
         "name": "Microgrid Energy Management",
         "call": microgrid_objective,

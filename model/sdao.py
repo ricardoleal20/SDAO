@@ -11,7 +11,7 @@ from model.soa.template import Algorithm
 
 class SDAOParams(TypedDict):
     """Parameters for the SDAO model.
-    
+
     - learning_rate (alpha): Learning rate of the algorithm. Controls
         the step size of the particles in the search space.
     - memory_coeff (gamma): Memory coefficient of the algorithm. This
@@ -40,7 +40,7 @@ class Particle:
 
 class SDAO(Algorithm):
     """Stochastic Diffusion Adaptive Optimization (SDAO) model.
-    
+
     This model involves the following parameters to adjust:
     - num_particles: Number of particles to use.
     - dimension: Dimension of the search space.
@@ -216,7 +216,7 @@ class SDAO(Algorithm):
         kdtree: KDTree,
     ) -> tuple[Particle, bool]:
         """Get the new particle position and value.
-        
+
         For this, we're going to use the following equation:
 
         x_i^{k+1} = (
@@ -303,7 +303,7 @@ class SDAO(Algorithm):
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
     ) -> Particle:
         """Apply Opposition-Based Learning (OBL) for a single particle.
-        
+
         The OBL is a technique that generates the opposite position of a
         particle and evaluates it. If the opposite position is better than
         the current position, the particle is updated.
@@ -344,7 +344,7 @@ class SDAO(Algorithm):
         best_position: np.ndarray
     ) -> Sequence[tuple[float, float]]:
         """Contract the search bounds based on the best global solution.
-        
+
         For each dimension j:
           new_lower_j = best_position_j - delta * (best_position_j - original_lower_j)
           new_upper_j = best_position_j + delta * (original_upper_j - best_position_j)
