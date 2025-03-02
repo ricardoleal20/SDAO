@@ -1,30 +1,28 @@
-"""
+""" """
 
-"""
 from typing import Callable, Sequence
 import numpy as np
+
 # Local imports
 from model.soa.template import Algorithm
 
 
 class PathRelinking(Algorithm):
     """Implementation of Path Relinking for large-scale global optimization."""
+
     _n_iterations: int
     _n_population: int
     _elite_ratio: float
     _verbose: bool
 
-    __slots__ = [
-        "_n_population", "_n_iterations",
-        "_elite_ratio", "_verbose"
-    ]
+    __slots__ = ["_n_population", "_n_iterations", "_elite_ratio", "_verbose"]
 
     def __init__(
         self,
         n_population: int = 50,
         n_iterations: int = 1000,
         elite_ratio: float = 0.2,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """
         Initialize the optimizer.
@@ -43,7 +41,7 @@ class PathRelinking(Algorithm):
         self,
         objective_fn: Callable[[np.ndarray], float | int],
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
-        dimension: int
+        dimension: int,
     ) -> tuple[float, np.ndarray]:
         """
         Perform optimization using Path Relinking.
@@ -58,10 +56,13 @@ class PathRelinking(Algorithm):
         """
         fn_bounds = [bounds] if isinstance(bounds, tuple) else bounds
         # Initialize population
-        population = np.array([
-            np.random.uniform(low, high, dimension) for low, high in fn_bounds
-            for _ in range(self._n_population)
-        ])
+        population = np.array(
+            [
+                np.random.uniform(low, high, dimension)
+                for low, high in fn_bounds
+                for _ in range(self._n_population)
+            ]
+        )
         fitness = np.array([objective_fn(ind) for ind in population])
 
         best_idx = np.argmin(fitness)
@@ -80,7 +81,8 @@ class PathRelinking(Algorithm):
                 if i not in elite_indices:
                     elite_partner = elites[np.random.randint(elite_count)]
                     new_solution = self.path_relinking(
-                        population[i], elite_partner, fn_bounds)  # type: ignore
+                        population[i], elite_partner, fn_bounds
+                    )  # type: ignore
                     new_population[i] = new_solution
 
             # Evaluate new population
@@ -95,8 +97,7 @@ class PathRelinking(Algorithm):
             population = new_population
 
             if self._verbose:
-                print(
-                    f"Iteration {iteration + 1}, Best Fitness: {best_fitness}")
+                print(f"Iteration {iteration + 1}, Best Fitness: {best_fitness}")
 
         return best_fitness, best_solution
 
@@ -104,7 +105,7 @@ class PathRelinking(Algorithm):
         self,
         start: np.ndarray,
         target: np.ndarray,
-        bounds: Sequence[tuple[float, float]]
+        bounds: Sequence[tuple[float, float]],
     ) -> np.ndarray:
         """
         Perform path relinking between two solutions.

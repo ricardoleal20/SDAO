@@ -2,8 +2,10 @@
 Include the real life functions to test the algorithms, including their name
 and possible domain.
 """
+
 from typing import TYPE_CHECKING
 import numpy as np
+
 if TYPE_CHECKING:
     from model.solver import ExperimentFunction
 
@@ -12,7 +14,7 @@ def vrp_objective(
     route: np.ndarray,
     travel_times: np.ndarray,
     deadlines: np.ndarray,
-    traffic_noise_std: float
+    traffic_noise_std: float,
 ) -> float:
     """Objective function for the VRP problem with stochastic noise in the travel times.
 
@@ -30,8 +32,9 @@ def vrp_objective(
 
     # Simulate noise in the travel times, this is going to
     # simulate possible traffic jams or other delays.
-    noisy_travel_times = travel_times + \
-        np.random.normal(0, traffic_noise_std, travel_times.shape)
+    noisy_travel_times = travel_times + np.random.normal(
+        0, traffic_noise_std, travel_times.shape
+    )
     # Keep the diagonal as 0. THIS IS A HARD CONSTRAINT FOR THE VRP.
     np.fill_diagonal(noisy_travel_times, 0)
 
@@ -48,7 +51,7 @@ def vrp_objective(
     for i in range(len(route) - 1):
         # * Add the origin and the destination to know the travel time.
         origin = int(route[i])
-        destination = int(route[i+1])
+        destination = int(route[i + 1])
         # Add travel time with noise
         travel_time = noisy_travel_times[origin][destination]
         current_time += travel_time
@@ -68,7 +71,7 @@ def predictive_maintenance_objective(
     schedule: np.ndarray,
     failure_probs: np.ndarray,
     repair_costs: np.ndarray,
-    downtime_costs: float
+    downtime_costs: float,
 ) -> float:
     """Objective function simulating a predictive maintenance scenario
     with stochastic noise in the failures.
@@ -95,8 +98,7 @@ def predictive_maintenance_objective(
         # * If it not fails, the cost is lower.
         if np.random.random() < failure_prob:
             # Unexpected failure, add a downtime cost.
-            total_cost += repair_costs[i] + \
-                downtime_costs * (maintenance_time - 0)
+            total_cost += repair_costs[i] + downtime_costs * (maintenance_time - 0)
         else:
             # Preventive maintenance cost.
             # Maintenance costs are lower than preventive.
@@ -106,8 +108,7 @@ def predictive_maintenance_objective(
 
 
 def chemical_experiment_objective(
-    conditions: np.ndarray,
-    noise_std: float = 0.1
+    conditions: np.ndarray, noise_std: float = 0.1
 ) -> float:
     """Objective function for optimizing a chemical experiment
     with uncertainty in the measurements.
@@ -150,12 +151,14 @@ def chemical_experiment_objective(
 # Example expected returns vector and covariance matrix for n assets.
 # In a real-world scenario, these would be estimated from historical data.
 mu = np.array([0.10, 0.12, 0.08, 0.07])  # Expected returns for 4 assets
-Sigma = np.array([
-    [0.005, -0.010, 0.004, 0.002],
-    [-0.010, 0.040, -0.002, 0.003],
-    [0.004, -0.002, 0.023, 0.002],
-    [0.002, 0.003, 0.002, 0.018]
-])
+Sigma = np.array(
+    [
+        [0.005, -0.010, 0.004, 0.002],
+        [-0.010, 0.040, -0.002, 0.003],
+        [0.004, -0.002, 0.023, 0.002],
+        [0.002, 0.003, 0.002, 0.018],
+    ]
+)
 
 # Trade-off parameter (lambda) between risk and return.
 # A higher lambda puts more weight on return.
@@ -201,11 +204,11 @@ def financial_portfolio_objective(x: np.ndarray) -> float:
 
 
 # Constants for the microgrid energy management problem
-DEMAND = 100.0             # Demand required in MW
-RENEWABLE = 60.0           # Renewable generation in MW
-GRID_COST = 50.0           # Cost per mW of grid usage
-BATTERY_COST = 30.0        # Cost for battery usage
-PENALTY_MICROGRID = 1000.0    # Penalty factor for unmet demand
+DEMAND = 100.0  # Demand required in MW
+RENEWABLE = 60.0  # Renewable generation in MW
+GRID_COST = 50.0  # Cost per mW of grid usage
+BATTERY_COST = 30.0  # Cost for battery usage
+PENALTY_MICROGRID = 1000.0  # Penalty factor for unmet demand
 
 
 def microgrid_objective(x: np.ndarray) -> float:
@@ -243,6 +246,7 @@ def microgrid_objective(x: np.ndarray) -> float:
     # and battery usage, plus the penalty
     return GRID_COST * x[0] + BATTERY_COST * (x[1] + x[2]) + penalty
 
+
 # ========================================================= #
 # DEFINE ALL THE STOCH FUNCTIONS WITH THEIR NAME AND DOMAIN #
 real_life_funcs: list["ExperimentFunction"] = [
@@ -250,30 +254,30 @@ real_life_funcs: list["ExperimentFunction"] = [
         "name": "Predictive Maintenance",
         "call": predictive_maintenance_objective,  # type: ignore
         "domain": (0, 29),
-        "dimension": 30
+        "dimension": 30,
     },
     {
         "name": "VRP",
         "call": vrp_objective,  # type: ignore
         "domain": (0, 9),
-        "dimension": 10
+        "dimension": 10,
     },
     {
         "name": "Chemical Experiment",
         "call": chemical_experiment_objective,  # type: ignore
         "domain": (0, 1000),
-        "dimension": 3
+        "dimension": 3,
     },
     {
-         "name": "Financial Portfolio",
-         "call": financial_portfolio_objective,
-         "domain": (0, 1),
-         "dimension": 4
+        "name": "Financial Portfolio",
+        "call": financial_portfolio_objective,
+        "domain": (0, 1),
+        "dimension": 4,
     },
     {
         "name": "Microgrid Energy Management",
         "call": microgrid_objective,
         "domain": (0, 100),
-        "dimension": 3
-    }
+        "dimension": 3,
+    },
 ]  # type: ignore

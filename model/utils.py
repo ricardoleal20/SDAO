@@ -69,7 +69,8 @@ def statistical_tests(
     for function in functions:
         # Get the results for each algorithm
         function_results = {
-            alg_name: results[function] for alg_name, results in statistical_data.items()
+            alg_name: results[function]
+            for alg_name, results in statistical_data.items()
         }
         # Now, let's get the values for each algorithm
         values = [
@@ -148,7 +149,10 @@ def _post_hoc_test(
         {
             "values": np.concatenate(statistical_values),
             "groups": np.concatenate(
-                [np.repeat(group, len(results)) for group, results in statistical_data.items()]
+                [
+                    np.repeat(group, len(results))
+                    for group, results in statistical_data.items()
+                ]
             ),
         }
     )

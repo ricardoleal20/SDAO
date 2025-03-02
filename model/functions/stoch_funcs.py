@@ -4,17 +4,19 @@ Run the Stochastic benchmark test functions!
 Define the stochastic benchmark functions to test the algorithms, including
 their name and possible domain.
 """
+
 from typing import TYPE_CHECKING
 import math
 import random
 import numpy as np
+
 if TYPE_CHECKING:
     from model.solver import ExperimentFunction
 
 
 def stochastic_rastrigin_function(x: np.ndarray) -> float | int:
     """Rastrigin function.
-    
+
     f(x^d) = A * d + sum_{i=1}^{d} [x_i^2 - A*cos(2*pi*x_i)]
 
     where $d$ is the dimension of the input vector $x$.
@@ -54,7 +56,7 @@ def stochastic_rosenbrock_function(x: np.ndarray) -> float:
     """
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
-    return sum((1 - x[:-1])**2 + 100 * (x[1:] - x[:-1]**2)**2) + noise
+    return sum((1 - x[:-1]) ** 2 + 100 * (x[1:] - x[:-1] ** 2) ** 2) + noise
 
 
 def stochastic_ackley_function(x: np.ndarray) -> float:
@@ -75,8 +77,13 @@ def stochastic_ackley_function(x: np.ndarray) -> float:
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
 
-    return -20 * math.exp(-0.2 * math.sqrt(sum_sq / d)) - math.exp(sum_cos / d) + 20 \
-        + math.e + noise
+    return (
+        -20 * math.exp(-0.2 * math.sqrt(sum_sq / d))
+        - math.exp(sum_cos / d)
+        + 20
+        + math.e
+        + noise
+    )
 
 
 def stochastic_schwefel_function(x: np.ndarray) -> float:
@@ -132,7 +139,7 @@ def stochastic_booth_function(x: np.ndarray) -> float:
     noise = random.gauss(0, 0.1)
 
     x0, y = x[0], x[1] if len(x) > 1 else 0
-    return (x0 + 2 * y - 7)**2 + (2 * x0 + y - 5)**2 + noise
+    return (x0 + 2 * y - 7) ** 2 + (2 * x0 + y - 5) ** 2 + noise
 
 
 def stochastic_beale_function(x: np.ndarray) -> float:
@@ -150,9 +157,11 @@ def stochastic_beale_function(x: np.ndarray) -> float:
     noise = random.gauss(0, 0.1)
 
     x0, y = x[0], x[1] if len(x) > 1 else 0
-    return ((1.5 - x0 + x0 * y)**2 +
-            (2.25 - x0 + x0 * y**2)**2 +
-            (2.625 - x0 + x0 * y**3)**2) + noise
+    return (
+        (1.5 - x0 + x0 * y) ** 2
+        + (2.25 - x0 + x0 * y**2) ** 2
+        + (2.625 - x0 + x0 * y**3) ** 2
+    ) + noise
 
 
 def stochastic_weierstrass_function(x: np.ndarray) -> float:
@@ -171,8 +180,9 @@ def stochastic_weierstrass_function(x: np.ndarray) -> float:
     a = 0.5
     b = 3.0
     d = len(x)
-    sum1 = sum(a**k * np.cos(2 * math.pi * b**k * (xi + 0.5))
-               for xi in x for k in range(21))
+    sum1 = sum(
+        a**k * np.cos(2 * math.pi * b**k * (xi + 0.5)) for xi in x for k in range(21)
+    )
     sum2 = sum(a**k * np.cos(math.pi * b**k) for k in range(21))
 
     # Gaussian noise with mean 0 and std deviation 0.1
@@ -201,7 +211,7 @@ def stochastic_griewank_function(x: np.ndarray) -> float:
 
 def stochastic_happy_cat_function(x: np.ndarray) -> float:
     """
-    HappyCat Function: 
+    HappyCat Function:
         f(x) = (|x^2 - 4|^0.25 + 0.5*(x^2 - 4) + 0.5)
                 + sum_{i=1}^{d} [1/(8*i) * (x_i^2 - 1)^2]
 
@@ -212,13 +222,15 @@ def stochastic_happy_cat_function(x: np.ndarray) -> float:
         - float: The value of the HappyCat function at the given position.
     """
     sum_sq = np.sum(x**2)
-    additional_sum = sum((1 / (8 * (i + 1))) * (xi**2 - 1)
-                         ** 2 for i, xi in enumerate(x))
+    additional_sum = sum(
+        (1 / (8 * (i + 1))) * (xi**2 - 1) ** 2 for i, xi in enumerate(x)
+    )
 
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
-    return np.abs(sum_sq - 4)**0.25 + 0.5 * (sum_sq - 4) \
-        + 0.5 + additional_sum + noise
+    return (
+        np.abs(sum_sq - 4) ** 0.25 + 0.5 * (sum_sq - 4) + 0.5 + additional_sum + noise
+    )
 
 
 def stochastic_salomon_function(x: np.ndarray) -> float:
@@ -235,34 +247,37 @@ def stochastic_salomon_function(x: np.ndarray) -> float:
     noise = random.gauss(0, 0.1)
 
     sum_sq = np.sum(x**2)
-    return 1 - math.cos(2 * math.pi * math.sqrt(sum_sq)) +\
-        0.1 * math.sqrt(sum_sq) + noise
+    return (
+        1 - math.cos(2 * math.pi * math.sqrt(sum_sq)) + 0.1 * math.sqrt(sum_sq) + noise
+    )
 
 
 # ========================================================= #
 # DEFINE ALL THE STOCH FUNCTIONS WITH THEIR NAME AND DOMAIN #
 stoch_funcs: list["ExperimentFunction"] = [
-    {"name": "Sphere", "call": stochastic_sphere_function,
-        "domain": (-5.12, 5.12)},
-    {"name": "Rosenbrock", "call": stochastic_rosenbrock_function,
-        "domain": (-5.0, 10.0)},
-    {"name": "Rastrigin", "call": stochastic_rastrigin_function,
-        "domain": (-5.12, 5.12)},
-    {"name": "Ackley", "call": stochastic_ackley_function,
-        "domain": (-32.768, 32.768)},
-    {"name": "Schwefel", "call": stochastic_schwefel_function,
-        "domain": (-500, 500)},
-    {"name": "Drop-Wave", "call": stochastic_drop_wave_function,
-        "domain": (-5.12, 5.12)},
+    {"name": "Sphere", "call": stochastic_sphere_function, "domain": (-5.12, 5.12)},
+    {
+        "name": "Rosenbrock",
+        "call": stochastic_rosenbrock_function,
+        "domain": (-5.0, 10.0),
+    },
+    {
+        "name": "Rastrigin",
+        "call": stochastic_rastrigin_function,
+        "domain": (-5.12, 5.12),
+    },
+    {"name": "Ackley", "call": stochastic_ackley_function, "domain": (-32.768, 32.768)},
+    {"name": "Schwefel", "call": stochastic_schwefel_function, "domain": (-500, 500)},
+    {
+        "name": "Drop-Wave",
+        "call": stochastic_drop_wave_function,
+        "domain": (-5.12, 5.12),
+    },
     {"name": "Booth", "call": stochastic_booth_function, "domain": (-10, 10)},
-    {"name": "Beale", "call": stochastic_beale_function,
-        "domain": (-4.5, 4.5)},
+    {"name": "Beale", "call": stochastic_beale_function, "domain": (-4.5, 4.5)},
     # {"name": "Weierstrass", "call": weierstrass_function,
     #    "domain": (-0.5, 0.5)},
-    {"name": "Griewank", "call": stochastic_griewank_function,
-        "domain": (-600, 600)},
-    {"name": "Happy Cat", "call": stochastic_happy_cat_function,
-        "domain": (-2.0, 2.0)},
-    {"name": "Salomon", "call": stochastic_salomon_function,
-        "domain": (-100, 100)}
+    {"name": "Griewank", "call": stochastic_griewank_function, "domain": (-600, 600)},
+    {"name": "Happy Cat", "call": stochastic_happy_cat_function, "domain": (-2.0, 2.0)},
+    {"name": "Salomon", "call": stochastic_salomon_function, "domain": (-100, 100)},
 ]  # type: ignore

@@ -27,24 +27,8 @@ typeCheckingMode = "basic"
 reportMissingTypeStubs = false
 reportMissingImports = false
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-skip-string-normalization = true
-skip-magic-trailing-comma = true
 
 [build-system]
 requires = ["poetry-core"]

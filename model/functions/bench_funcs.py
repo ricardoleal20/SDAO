@@ -4,16 +4,18 @@ Run the normal benchmark test functions!
 Define the normal benchmark functions to test the algorithms, including
 their name and possible domain.
 """
+
 from typing import TYPE_CHECKING
 import math
 import numpy as np
+
 if TYPE_CHECKING:
     from model.solver import ExperimentFunction
 
 
 def rastrigin_function(x: np.ndarray) -> float | int:
     """Rastrigin function.
-    
+
     f(x^d) = A * d + sum_{i=1}^{d} [x_i^2 - A*cos(2*pi*x_i)]
 
     where $d$ is the dimension of the input vector $x$.
@@ -47,7 +49,7 @@ def rosenbrock_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Rosenbrock function at the given position.
     """
-    return sum((1 - x[:-1])**2 + 100 * (x[1:] - x[:-1]**2)**2)
+    return sum((1 - x[:-1]) ** 2 + 100 * (x[1:] - x[:-1] ** 2) ** 2)
 
 
 def ackley_function(x: np.ndarray) -> float:
@@ -64,7 +66,12 @@ def ackley_function(x: np.ndarray) -> float:
     d = len(x)
     sum_sq = np.sum(x**2)
     sum_cos = np.sum(np.cos(2 * math.pi * x))
-    return -20 * math.exp(-0.2 * math.sqrt(sum_sq / d)) - math.exp(sum_cos / d) + 20 + math.e
+    return (
+        -20 * math.exp(-0.2 * math.sqrt(sum_sq / d))
+        - math.exp(sum_cos / d)
+        + 20
+        + math.e
+    )
 
 
 def schwefel_function(x: np.ndarray) -> float:
@@ -110,7 +117,7 @@ def booth_function(x: np.ndarray) -> float:
         - float: The value of the Booth function at the given position.
     """
     x0, y = x[0], x[1] if len(x) > 1 else 0
-    return (x0 + 2 * y - 7)**2 + (2 * x0 + y - 5)**2
+    return (x0 + 2 * y - 7) ** 2 + (2 * x0 + y - 5) ** 2
 
 
 def beale_function(x: np.ndarray) -> float:
@@ -125,9 +132,11 @@ def beale_function(x: np.ndarray) -> float:
         - float: The value of the Beale function at the given position.
     """
     x0, y = x[0], x[1] if len(x) > 1 else 0
-    return ((1.5 - x0 + x0 * y)**2 +
-            (2.25 - x0 + x0 * y**2)**2 +
-            (2.625 - x0 + x0 * y**3)**2)
+    return (
+        (1.5 - x0 + x0 * y) ** 2
+        + (2.25 - x0 + x0 * y**2) ** 2
+        + (2.625 - x0 + x0 * y**3) ** 2
+    )
 
 
 def weierstrass_function(x: np.ndarray) -> float:
@@ -146,8 +155,9 @@ def weierstrass_function(x: np.ndarray) -> float:
     a = 0.5
     b = 3.0
     d = len(x)
-    sum1 = sum(a**k * np.cos(2 * math.pi * b**k * (xi + 0.5))
-               for xi in x for k in range(21))
+    sum1 = sum(
+        a**k * np.cos(2 * math.pi * b**k * (xi + 0.5)) for xi in x for k in range(21)
+    )
     sum2 = sum(a**k * np.cos(math.pi * b**k) for k in range(21))
     return sum1 - d * sum2
 
@@ -169,7 +179,7 @@ def griewank_function(x: np.ndarray) -> float:
 
 def happy_cat_function(x: np.ndarray) -> float:
     """
-    HappyCat Function: 
+    HappyCat Function:
         f(x) = (|x^2 - 4|^0.25 + 0.5*(x^2 - 4) + 0.5)
                 + sum_{i=1}^{d} [1/(8*i) * (x_i^2 - 1)^2]
 
@@ -180,9 +190,10 @@ def happy_cat_function(x: np.ndarray) -> float:
         - float: The value of the HappyCat function at the given position.
     """
     sum_sq = np.sum(x**2)
-    additional_sum = sum((1 / (8 * (i + 1))) * (xi**2 - 1)
-                         ** 2 for i, xi in enumerate(x))
-    return np.abs(sum_sq - 4)**0.25 + 0.5 * (sum_sq - 4) + 0.5 + additional_sum
+    additional_sum = sum(
+        (1 / (8 * (i + 1))) * (xi**2 - 1) ** 2 for i, xi in enumerate(x)
+    )
+    return np.abs(sum_sq - 4) ** 0.25 + 0.5 * (sum_sq - 4) + 0.5 + additional_sum
 
 
 def schaffer_f7_function(x: np.ndarray) -> float:
@@ -198,14 +209,14 @@ def schaffer_f7_function(x: np.ndarray) -> float:
         - float: The value of the Schaffer's F7 function at the given position.
     """
     sq_sum = np.sum([y**2 for y in x])
-    return 0.5 + (math.sin(math.sqrt(sq_sum))**2 - 0.5) / (1 + 0.001 * sq_sum)**2
+    return 0.5 + (math.sin(math.sqrt(sq_sum)) ** 2 - 0.5) / (1 + 0.001 * sq_sum) ** 2
 
 
 def expanded_schaffer_f6_function(x: np.ndarray) -> float:
     """
     Expanded Schaffer's F6 Function:
-    
-        f(x, y) = 0.5 + (sin(sqrt(x^2 + y^2))^2 - 0.5) 
+
+        f(x, y) = 0.5 + (sin(sqrt(x^2 + y^2))^2 - 0.5)
                         / (1 + 0.001*(x^2 + y^2))^2
     where x and y are the two dimensions of the position vector.
 
@@ -216,7 +227,7 @@ def expanded_schaffer_f6_function(x: np.ndarray) -> float:
         - float: The value of the Expanded Schaffer's F6 function at the given position.
     """
     sq_sum = np.sum([y**2 for y in x])
-    return 0.5 + (math.sin(math.sqrt(sq_sum))**2 - 0.5) / (1 + 0.001 * sq_sum)**2
+    return 0.5 + (math.sin(math.sqrt(sq_sum)) ** 2 - 0.5) / (1 + 0.001 * sq_sum) ** 2
 
 
 def xin_she_yang_1_function(x: np.ndarray) -> float | np.signedinteger:
@@ -229,7 +240,7 @@ def xin_she_yang_1_function(x: np.ndarray) -> float | np.signedinteger:
     **Returns**:
         - float: The value of the Xin-She Yang's 1 function at the given position.
     """
-    return np.sum(np.abs(x)**np.arange(1, len(x) + 1))
+    return np.sum(np.abs(x) ** np.arange(1, len(x) + 1))
 
 
 def salomon_function(x: np.ndarray) -> float:
@@ -250,8 +261,7 @@ def salomon_function(x: np.ndarray) -> float:
 # DEFINE ALL THE STOCH FUNCTIONS WITH THEIR NAME AND DOMAIN #
 bench_funcs: list["ExperimentFunction"] = [
     {"name": "Sphere", "call": sphere_function, "domain": (-5.12, 5.12)},
-    {"name": "Rosenbrock", "call": rosenbrock_function,
-        "domain": (-5.0, 10.0)},
+    {"name": "Rosenbrock", "call": rosenbrock_function, "domain": (-5.0, 10.0)},
     {"name": "Rastrigin", "call": rastrigin_function, "domain": (-5.12, 5.12)},
     {"name": "Ackley", "call": ackley_function, "domain": (-32.768, 32.768)},
     {"name": "Schwefel", "call": schwefel_function, "domain": (-500, 500)},
@@ -262,11 +272,12 @@ bench_funcs: list["ExperimentFunction"] = [
     #    "domain": (-0.5, 0.5)},
     {"name": "Griewank", "call": griewank_function, "domain": (-600, 600)},
     {"name": "Happy Cat", "call": happy_cat_function, "domain": (-2.0, 2.0)},
-    {"name": "Schaffer F7", "call": schaffer_f7_function,
-        "domain": (-100, 100)},
-    {"name": "Expanded Schaffer F6",
-        "call": expanded_schaffer_f6_function, "domain": (-100, 100)},
-    {"name": "Xin-She Yang 1",
-        "call": xin_she_yang_1_function, "domain": (-10, 10)},
-    {"name": "Salomon", "call": salomon_function, "domain": (-100, 100)}
+    {"name": "Schaffer F7", "call": schaffer_f7_function, "domain": (-100, 100)},
+    {
+        "name": "Expanded Schaffer F6",
+        "call": expanded_schaffer_f6_function,
+        "domain": (-100, 100),
+    },
+    {"name": "Xin-She Yang 1", "call": xin_she_yang_1_function, "domain": (-10, 10)},
+    {"name": "Salomon", "call": salomon_function, "domain": (-100, 100)},
 ]  # type: ignore

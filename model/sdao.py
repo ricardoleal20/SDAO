@@ -1,10 +1,12 @@
 """
 Implement the SDAO model in Python.
 """
+
 from typing import TypedDict, Callable, Sequence, Literal
 from dataclasses import dataclass
 import numpy as np
 from scipy.spatial import KDTree
+
 # Local imports
 from model.soa.template import Algorithm
 
@@ -20,22 +22,25 @@ class SDAOParams(TypedDict):
     - decay_rate (beta): Decay rate of the algorithm. This is used during
         the update of the coefficient of diffusion.
     - diffusion_coeff (D): The initial diffusion coefficient of the algorithm.
+    - density_radius (r_D): The radius used to calculate the density gradient
     """
+
     learning_rate: float
     memory_coeff: float
     diffusion_coeff: float
+    density_radius: float
     decay_rate: float
 
 
 @dataclass
 class Particle:
     """Particle used in the SDAO model to represent a possible solution."""
+
     position: np.ndarray
     value: float  # The value of the objective function for this particle
     best_value: float  # The best value found in the particle
     best_position: np.ndarray  # The best position found by this particle
     stagnation_counter: int  # Counter for consecutive iterations without improvement
-
 
 
 class SDAO(Algorithm):
@@ -54,6 +59,7 @@ class SDAO(Algorithm):
     - num_threads: Number of threads to use. Default to 1.
     - verbose: Whether to print information during the run. Default to false.
     """
+
     _n_part: int
     _n_iter: int
     _params: SDAOParams
@@ -61,10 +67,7 @@ class SDAO(Algorithm):
     _version: Literal[0, 1, 2]
     _best_part: Particle
     # Slots of the class
-    __slots__ = [
-        "_params", "_n_part", "_v", "_n_iter",
-        "_version", "_best_part",
-    ]
+    __slots__ = ["_params", "_n_part", "_v", "_n_iter", "_version", "_best_part"]
 
     def __init__(  # pylint: disable=R0913
         self,
@@ -108,9 +111,8 @@ class SDAO(Algorithm):
             particle.best_value = obj_value
             particle.best_position = particle.position.copy()
         # Apply OBL during initialization
-        particles = [self.__apply_obl(
-            particle, objective_fn, bounds)
-            for particle in particles
+        particles = [
+            self.__apply_obl(particle, objective_fn, bounds) for particle in particles
         ]
 
         # Get the best particle
@@ -126,9 +128,7 @@ class SDAO(Algorithm):
             for particle in particles:
                 # Update the particle
                 particle, improvement = self.__update_particle(
-                    particle, objective_fn,
-                    diff_coeff, bounds,
-                    kdtree
+                    particle, objective_fn, diff_coeff, bounds, kdtree
                 )
                 # Based on the improvement, update the stagnation counter
                 # of the particle
@@ -143,13 +143,12 @@ class SDAO(Algorithm):
                     # * Apply OBL based on the stagnation counter.
                     # * The probability of applying OBL is defined as: P = 1 - exp(-λ * SC)
                     # * where SC is the stagnation counter of this specific particle.
-                    prob_obl = 1 - \
-                        np.exp(-self._params["decay_rate"]
-                               * particle.stagnation_counter)
+                    prob_obl = 1 - np.exp(
+                        -self._params["decay_rate"] * particle.stagnation_counter
+                    )
                     # * Generate a random number in [0, 1] to decide if OBL is applied.
                     if np.random.rand() < prob_obl:
-                        particle = self.__apply_obl(
-                            particle, objective_fn, bounds)
+                        particle = self.__apply_obl(particle, objective_fn, bounds)
 
                 # Update the particle improvement flag if needed
                 improvement_flag = improvement_flag or improvement
@@ -176,17 +175,20 @@ class SDAO(Algorithm):
 
             # * Update the diffusion coefficient for the next iteration...
             # Method 1: Time-based decay
-            diff_time_based = self._params["diffusion_coeff"] * \
-                np.exp(-self._params["decay_rate"] * k)
+            diff_time_based = self._params["diffusion_coeff"] * np.exp(
+                -self._params["decay_rate"] * k
+            )
             # Method 2: Improved decay with density
             diff_density_based = diff_time_based * (1 + 0.5 * global_density)
             # Dynamic selection of the diffusion coefficient
-            diff_coeff = diff_time_based + weight * \
-                (diff_density_based - diff_time_based)
+            diff_coeff = diff_time_based + weight * (
+                diff_density_based - diff_time_based
+            )
             # # Every fixed number of iterations, contract the domain
             if (k + 1) % 20 == 0:  # Do it every 20 iterations ! Maybe a parameter?
                 bounds = self.__contract_bounds(
-                    original_bounds, self._best_part.best_position)
+                    original_bounds, self._best_part.best_position
+                )
 
             # Update the KD Tree for the new positions of the particles
             kdtree = KDTree([p.position for p in particles])
@@ -198,8 +200,7 @@ class SDAO(Algorithm):
 
             # Optional: Print progress ONLY if verbose is enabled
             if self._v and (k % 10 == 0 or k == self._n_iter - 1):
-                print(
-                    f"Iteration [{k}] | Best Value = {self._best_part.best_value}")
+                print(f"Iteration [{k}] | Best Value = {self._best_part.best_value}")
 
         # Return the best particle found
         return self._best_part.best_value, self._best_part.best_position
@@ -233,19 +234,26 @@ class SDAO(Algorithm):
         # * Density term
         density_term = self.__get_diffusion_term(particle, kdtree)
         # * Global memory term
-        global_attraction = self._params["learning_rate"] * \
-            (self._best_part.best_position - particle.position)
+        global_attraction = self._params["learning_rate"] * (
+            self._best_part.best_position - particle.position
+        )
         # P2: Memory term
-        memory_term = self._params["memory_coeff"] * \
-            (particle.best_position - particle.position)
+        memory_term = self._params["memory_coeff"] * (
+            particle.best_position - particle.position
+        )
         # P3: Noisy diffusion term
         # Calculate the stoch term using a Heavy-tailed distribution
-        stoch_term = np.sqrt(2 * diff_coeff) * \
-            np.random.uniform(0, 1, particle.position.shape)
+        stoch_term = np.sqrt(2 * diff_coeff) * np.random.uniform(
+            0, 1, particle.position.shape
+        )
         # * Update the position of the particle
-        new_position = particle.position \
-            + density_term + global_attraction \
-            + memory_term + stoch_term
+        new_position = (
+            particle.position
+            + density_term
+            + global_attraction
+            + memory_term
+            + stoch_term
+        )
 
         # ANY POSITION OUTSIDE THE BOUNDS WILL BE MOVED TO THE BOUNDARY
         if isinstance(bounds, tuple):
@@ -265,11 +273,7 @@ class SDAO(Algorithm):
             improvement = True
         return particle, improvement
 
-    def __get_diffusion_term(
-        self,
-        particle: Particle,
-        kdtree: KDTree
-    ) -> np.ndarray:
+    def __get_diffusion_term(self, particle: Particle, kdtree: KDTree) -> np.ndarray:
         """Calculate the diffusion term inspired by the 2nd Fick's Law.
         This term represents the tendency of particles to move from
         high-density areas to low-density areas.
@@ -277,9 +281,11 @@ class SDAO(Algorithm):
         # Get the diffusion parameters, such as the k-radius for the tree
         radius = 1.0  # * Note: This could be an adaptive parameter...
         neighbors_idx = kdtree.query_ball_point(particle.position, r=radius)
-        neighbors_idx = [idx for idx in neighbors_idx if not np.array_equal(
-            particle.position, kdtree.data[idx])]
-
+        neighbors_idx = [
+            idx
+            for idx in neighbors_idx
+            if not np.array_equal(particle.position, kdtree.data[idx])
+        ]
         if not neighbors_idx:
             return np.zeros_like(particle.position)
         # Calculate the center of mass of the neighbors
@@ -309,8 +315,7 @@ class SDAO(Algorithm):
         the current position, the particle is updated.
         """
         # Generate the opposite position
-        opposite_position = self.__generate_opposite_position(
-            particle.position, bounds)
+        opposite_position = self.__generate_opposite_position(particle.position, bounds)
         # Evaluate the opposite position
         opposite_value = objective_fn(opposite_position)
         # Compare and keep the better position
@@ -326,7 +331,7 @@ class SDAO(Algorithm):
     def __generate_opposite_position(
         self,
         position: np.ndarray,
-        bounds: Sequence[tuple[float, float]] | tuple[float, float]
+        bounds: Sequence[tuple[float, float]] | tuple[float, float],
     ) -> np.ndarray:
         """Generate the opposite position for a given particle position."""
         opposite_position = np.empty_like(position)
@@ -341,7 +346,7 @@ class SDAO(Algorithm):
     def __contract_bounds(
         self,
         original_bounds: Sequence[tuple[float, float]] | tuple[float, float],
-        best_position: np.ndarray
+        best_position: np.ndarray,
     ) -> Sequence[tuple[float, float]]:
         """Contract the search bounds based on the best global solution.
 
@@ -372,6 +377,7 @@ class SDAO(Algorithm):
         # Depending on the flag, return the bounds as a tuple or as a list
         return new_bounds[0] if was_tuple else new_bounds
 
+
 # ====================================== #
 #              Helper methods            #
 # ====================================== #
@@ -380,24 +386,28 @@ class SDAO(Algorithm):
 def _init_particles(
     num_particles: int,
     dimension: int,
-    bounds: Sequence[tuple[float, float]] | tuple[float, float]
+    bounds: Sequence[tuple[float, float]] | tuple[float, float],
 ) -> list[Particle]:
     """Initialize the particles for the SDAO algorithm."""
-    return [Particle(
-        position=np.random.uniform(*bounds, size=dimension),
-        value=np.inf,
-        best_value=np.inf,
-        best_position=np.zeros(dimension),
-        stagnation_counter=0
-    ) for _ in range(num_particles)]
+    return [
+        Particle(
+            position=np.random.uniform(*bounds, size=dimension),
+            value=np.inf,
+            best_value=np.inf,
+            best_position=np.zeros(dimension),
+            stagnation_counter=0,
+        )
+        for _ in range(num_particles)
+    ]
 
 
 def _calc_swarm_diversity(particles: list[Particle]) -> float:
     """Compute a simple measure of swarm diversity:
-       * The average of the dimension-wise standard deviations.
+    * The average of the dimension-wise standard deviations.
     """
-    positions = np.array([p.position for p in particles]
-                         )  # shape: (num_particles, dimension)
+    positions = np.array(
+        [p.position for p in particles]
+    )  # shape: (num_particles, dimension)
     # standard deviation per dimension
     std_dev = np.std(positions, axis=0)  # shape: (dimension,)
     # average across all dimensions

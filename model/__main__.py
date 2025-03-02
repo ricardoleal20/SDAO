@@ -176,7 +176,9 @@ def functions_due_to_scenario(scenario: Literal[0, 1, 2]) -> list[ExperimentFunc
 if __name__ == "__main__":
     # Parse the arguments
     parser = ArgumentParser(description="Run the SDAO algorithm.")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Increase output verbosity.")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Increase output verbosity."
+    )
     parser.add_argument(
         "-e",
         "--experiments",
@@ -184,8 +186,12 @@ if __name__ == "__main__":
         default=100,
         help="Number of experiments (for statistical analysis).",
     )
-    parser.add_argument("-i", "--iterations", type=int, default=100, help="Number of iterations.")
-    parser.add_argument("-d", "--dimension", type=int, default=2, help="Number of iterations.")
+    parser.add_argument(
+        "-i", "--iterations", type=int, default=100, help="Number of iterations."
+    )
+    parser.add_argument(
+        "-d", "--dimension", type=int, default=2, help="Number of iterations."
+    )
     parser.add_argument(
         "-s",
         "--scenario",
@@ -193,9 +199,15 @@ if __name__ == "__main__":
         default="0",
         help="Scenario to run. Use 'all' to run them all at once",
     )
-    parser.add_argument("-a", "--algorithm", type=str, default="all", help="Algorithm to run.")
     parser.add_argument(
-        "-ltx", "--latex", type=str, default=True, help="Store the results in a LaTex friendly way."
+        "-a", "--algorithm", type=str, default="all", help="Algorithm to run."
+    )
+    parser.add_argument(
+        "-ltx",
+        "--latex",
+        type=str,
+        default=True,
+        help="Store the results in a LaTex friendly way.",
     )
 
     args = parser.parse_args()
@@ -220,20 +232,31 @@ if __name__ == "__main__":
     )
 
     sfs = StochasticFractalSearch(
-        n_population=50, n_iterations=args.iterations, fractal_factor=0.9, verbose=args.verbose
+        n_population=50,
+        n_iterations=args.iterations,
+        fractal_factor=0.9,
+        verbose=args.verbose,
     )
 
     sgd = AlgebraicSGD(n_iterations=args.iterations, verbose=args.verbose)
 
     shade = SHADEwithILS(
-        n_population=50, n_iterations=args.iterations, memory_size=10, verbose=args.verbose
+        n_population=50,
+        n_iterations=args.iterations,
+        memory_size=10,
+        verbose=args.verbose,
     )
 
     path_relinking = PathRelinking(
-        n_population=50, n_iterations=args.iterations, elite_ratio=0.2, verbose=args.verbose
+        n_population=50,
+        n_iterations=args.iterations,
+        elite_ratio=0.2,
+        verbose=args.verbose,
     )
 
-    amso = AMSO(num_swarms=5, swarm_size=10, n_iterations=args.iterations, verbose=args.verbose)
+    amso = AMSO(
+        num_swarms=5, swarm_size=10, n_iterations=args.iterations, verbose=args.verbose
+    )
 
     tlpso = TLPSO(
         global_swarm_size=5,
@@ -274,13 +297,16 @@ if __name__ == "__main__":
     for scenario in scenarios:
         # Create the solver
         solver = Solver(
-            num_experiments=args.experiments, functions=functions_due_to_scenario(int(scenario))
+            num_experiments=args.experiments,
+            functions=functions_due_to_scenario(int(scenario)),
         )
         # Run the benchmark
         benchmarks_results: dict[str, list[BenchmarkResult]] = {}
         for i, alg in enumerate(algorithms, start=1):
             NAME = alg.__class__.__name__
-            print(f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms)}\033[0m")
+            print(
+                f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms)}\033[0m"
+            )
             print(32 * "=")
             results = solver.benchmark(dimension=args.dimension, model=alg.optimize)
             # Print the results
@@ -327,4 +353,6 @@ if __name__ == "__main__":
                     )
         else:
             # In this case, we don't have enough algorithms to perform a statistical test.
-            warnings.warn("\033[93mNot enough algorithms to perform a statistical test.\033[0m")
+            warnings.warn(
+                "\033[93mNot enough algorithms to perform a statistical test.\033[0m"
+            )

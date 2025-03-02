@@ -3,23 +3,23 @@ Two Level PSO algorithm implementation.
 
 Link: https://link.springer.com/article/10.1007/s11721-019-00167-w
 """
+
 from typing import Callable, Sequence
 import numpy as np
+
 # Local imports
 from model.soa.template import Algorithm
 
 
 class TLPSO(Algorithm):  # pylint: disable=R0903
     """Implementation of Two-Level Particle Swarm Optimization (TLPSO)."""
+
     _verbose: bool
     _global_swarm_size: int
     _local_swarm_size: int
     _n_iterations: int
 
-    __slots__ = [
-        "_global_swarm_size", "_local_swarm_size",
-        "_n_iterations", "_verbose"
-    ]
+    __slots__ = ["_global_swarm_size", "_local_swarm_size", "_n_iterations", "_verbose"]
 
     def __init__(
         self,
@@ -27,7 +27,7 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
         local_swarm_size: int = 5,
         max_iterations: int = 1000,
         *,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """Initialize the optimizer.
 
@@ -45,7 +45,7 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
         self,
         objective_fn: Callable[[np.ndarray], float | int],
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
-        dimension: int
+        dimension: int,
     ) -> tuple[float, np.ndarray]:
         """
         Perform optimization using TLPSO.
@@ -60,12 +60,15 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
         """
         if not isinstance(bounds, tuple):
             raise NotImplementedError(
-                "TLPSO only supports a single range for all dimensions.")
+                "TLPSO only supports a single range for all dimensions."
+            )
         # Initialize global swarm
-        global_positions = np.array([
-            np.random.uniform(bounds[0], bounds[1], size=dimension)
-            for _ in range(self._global_swarm_size)
-        ])
+        global_positions = np.array(
+            [
+                np.random.uniform(bounds[0], bounds[1], size=dimension)
+                for _ in range(self._global_swarm_size)
+            ]
+        )
         global_velocities = np.zeros((self._global_swarm_size, dimension))
         global_best_position = np.zeros(dimension)
         global_best_fitness = np.inf
@@ -73,10 +76,12 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
         # Initialize local swarms
         local_swarms = [
             {
-                "positions": np.array([
-                    np.random.uniform(bounds[0], bounds[1], size=dimension)
-                    for _ in range(self._local_swarm_size)
-                ]),
+                "positions": np.array(
+                    [
+                        np.random.uniform(bounds[0], bounds[1], size=dimension)
+                        for _ in range(self._local_swarm_size)
+                    ]
+                ),
                 "velocities": np.zeros((self._local_swarm_size, dimension)),
                 "best_positions": None,
                 "best_fitness": np.inf,
@@ -100,19 +105,19 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
                 # Update velocities and positions
                 for i in range(self._local_swarm_size):
                     inertia = 0.5 * velocities[i]
-                    cognitive = 2.0 * np.random.rand(dimension) * (
-                        local_swarm["best_positions"] - positions[i]
+                    cognitive = (
+                        2.0
+                        * np.random.rand(dimension)
+                        * (local_swarm["best_positions"] - positions[i])
                     )
-                    social = 2.0 * np.random.rand(dimension) * (
-                        global_positions[idx] - positions[i]
+                    social = (
+                        2.0
+                        * np.random.rand(dimension)
+                        * (global_positions[idx] - positions[i])
                     )
                     velocities[i] = inertia + cognitive + social
                     positions[i] += velocities[i]
-                    positions[i] = np.clip(
-                        positions[i],
-                        bounds[0],
-                        bounds[1]
-                    )
+                    positions[i] = np.clip(positions[i], bounds[0], bounds[1])
 
                 local_swarm["positions"] = positions
 
@@ -127,16 +132,18 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
 
                 # Update velocities and positions
                 inertia = 0.5 * global_velocities[i]
-                cognitive = 2.0 * np.random.rand(dimension) * (
-                    global_best_position - global_positions[i]
+                cognitive = (
+                    2.0
+                    * np.random.rand(dimension)
+                    * (global_best_position - global_positions[i])
                 )
                 global_velocities[i] = inertia + cognitive
                 global_positions[i] += global_velocities[i]
-                global_positions[i] = np.clip(
-                    global_positions[i], bounds[0], bounds[1])
+                global_positions[i] = np.clip(global_positions[i], bounds[0], bounds[1])
 
             if self._verbose:
                 print(
-                    f"Iteration {iteration + 1}, Global Best Fitness: {global_best_fitness}")
+                    f"Iteration {iteration + 1}, Global Best Fitness: {global_best_fitness}"
+                )
 
         return global_best_fitness, global_best_position

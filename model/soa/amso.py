@@ -3,23 +3,23 @@ AMSO: Adaptive Multi-Source Optimization
 
 Link: https://dl.acm.org/doi/10.1145/3321707.3321713
 """
+
 from typing import Callable, Sequence
 import numpy as np
+
 # Local imports
 from model.soa.template import Algorithm
 
 
 class AMSO(Algorithm):  # pylint: disable=R0903
     """Implementation of Adaptive Multi-Swarm Optimization (AMSO)."""
+
     _n_iterations: int
     _num_swarms: int
     _swarm_size: int
     _verbose: bool
 
-    __slots__ = [
-        "_num_swarms", "_swarm_size",
-        "_n_iterations", "_verbose"
-    ]
+    __slots__ = ["_num_swarms", "_swarm_size", "_n_iterations", "_verbose"]
 
     def __init__(
         self,
@@ -27,7 +27,7 @@ class AMSO(Algorithm):  # pylint: disable=R0903
         swarm_size: int = 20,
         n_iterations: int = 1000,
         *,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """
         Initialize the optimizer.
@@ -46,7 +46,7 @@ class AMSO(Algorithm):  # pylint: disable=R0903
         self,
         objective_fn: Callable[[np.ndarray], float | int],
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
-        dimension: int
+        dimension: int,
     ) -> tuple[float, np.ndarray]:
         """
         Perform optimization using AMSO.
@@ -66,10 +66,12 @@ class AMSO(Algorithm):  # pylint: disable=R0903
         # Initialize swarms
         swarms = [
             {
-                "positions": np.array([
-                    np.random.uniform(bounds[0], bounds[1], size=dimension)
-                    for _ in range(self._swarm_size)
-                ]),
+                "positions": np.array(
+                    [
+                        np.random.uniform(bounds[0], bounds[1], size=dimension)
+                        for _ in range(self._swarm_size)
+                    ]
+                ),
                 "velocities": np.zeros((self._swarm_size, dimension)),
                 "best_positions": None,
                 "best_fitness": np.inf,
@@ -105,23 +107,24 @@ class AMSO(Algorithm):  # pylint: disable=R0903
                 # Update velocities and positions
                 for i in range(self._swarm_size):
                     inertia = 0.5 * velocities[i]
-                    cognitive = 2.0 * np.random.rand(dimension) * (
-                        swarm["best_positions"] - positions[i]
+                    cognitive = (
+                        2.0
+                        * np.random.rand(dimension)
+                        * (swarm["best_positions"] - positions[i])
                     )
-                    social = 2.0 * np.random.rand(dimension) * (
-                        global_best_position - positions[i]
+                    social = (
+                        2.0
+                        * np.random.rand(dimension)
+                        * (global_best_position - positions[i])
                     )
                     velocities[i] = inertia + cognitive + social
                     positions[i] += velocities[i]
-                    positions[i] = np.clip(
-                        positions[i],
-                        bounds[0],
-                        bounds[1]
-                    )
+                    positions[i] = np.clip(positions[i], bounds[0], bounds[1])
 
                 swarm["positions"] = positions
             if self._verbose:
                 print(
-                    f"Iteration {iteration + 1}, Global Best Fitness: {global_best_fitness}")
+                    f"Iteration {iteration + 1}, Global Best Fitness: {global_best_fitness}"
+                )
 
         return global_best_fitness, global_best_position
