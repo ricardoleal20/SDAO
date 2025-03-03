@@ -193,7 +193,14 @@ def happy_cat_function(x: np.ndarray) -> float:
     additional_sum = sum(
         (1 / (8 * (i + 1))) * (xi**2 - 1) ** 2 for i, xi in enumerate(x)
     )
-    return np.abs(sum_sq - 4) ** 0.25 + 0.5 * (sum_sq - 4) + 0.5 + additional_sum
+    return (
+        np.abs(sum_sq - 4) ** 0.25
+        + 0.5 * (sum_sq - 4)
+        + 0.5
+        + additional_sum
+        # We add this to ensure the function HappyCat get's a minimum value of 0'
+        - 5.065084580073288
+    )
 
 
 def schaffer_f7_function(x: np.ndarray) -> float:

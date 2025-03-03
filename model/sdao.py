@@ -279,8 +279,9 @@ class SDAO(Algorithm):
         high-density areas to low-density areas.
         """
         # Get the diffusion parameters, such as the k-radius for the tree
-        radius = 1.0  # * Note: This could be an adaptive parameter...
-        neighbors_idx = kdtree.query_ball_point(particle.position, r=radius)
+        neighbors_idx = kdtree.query_ball_point(
+            particle.position, r=self._params["density_radius"]
+        )
         neighbors_idx = [
             idx
             for idx in neighbors_idx
