@@ -11,7 +11,7 @@ In here, we'll select:
 from typing import Callable, TypedDict, Sequence, Optional
 from typing_extensions import NotRequired
 import time
-import resource
+import tracemalloc
 import numpy as np
 
 # Import TQDM for the progress bar
@@ -26,6 +26,7 @@ class ExperimentFunction(TypedDict):
     domain: tuple[float, float]
     dimension: NotRequired[int]
     optimal_value: NotRequired[float]
+    optimal_x_value: NotRequired[np.ndarray | list[float]]
 
 
 class BenchmarkResult(TypedDict):
@@ -81,13 +82,13 @@ class Solver:
                 # Calculate the time taken in this iteration
                 start_time = time.time()
                 # Also, calculate the memory usage
-                memory_usage = (
-                    resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
-                )
+                tracemalloc.start()
                 # Run the model
                 best_value, best_position = model(
                     func["call"], func["domain"], func.get("dimension", dimension)
                 )
+                _, peak = tracemalloc.get_traced_memory()
+                tracemalloc.stop()
                 # With this, append the results
                 results.append(
                     {
@@ -95,15 +96,16 @@ class Solver:
                         "best_value": best_value,
                         "best_position": best_position,
                         "function": func["name"],
-                        "time": time.time() - start_time,
+                        "time": (time.time() - start_time)
+                        * 1000,  # to convert it to microseconds
                         # Memory usage is initially in kilobytes, converting it to megabytes
-                        "memory": memory_usage / 1024.0,
-                        "error": abs(
+                        "memory": peak / 1024.0,
+                        "error": np.abs(
                             best_value - func.get("optimal_value", float("inf"))
                         )
                         if func.get("optimal_value") is not None
                         else None,
-                        "error_x": _get_error_x(best_position, func, dimension),
+                        "error_x": _get_error_x(best_position, func),
                     }
                 )
         # Return the results
@@ -111,7 +113,7 @@ class Solver:
 
 
 def _get_error_x(
-    best_position: np.ndarray, func: ExperimentFunction, dimension: int
+    best_position: np.ndarray, func: ExperimentFunction
 ) -> Optional[float]:
     if func.get("optimal_x_value") is None:
         # This is a placeholder for the error_x calculation when optimal_x_value is None
@@ -121,6 +123,9 @@ def _get_error_x(
     expected_x_array = func.get("optimal_x_value", [])
     if len(expected_x_array) != len(best_position):
         # Multiply it by the given dimension...
-        expected_x_array = np.array(expected_x_array) * func.get("dimension", dimension)
+        expected_x_array = expected_x_array * len(best_position)
     # Return the absolute error...
-    return float(np.linalg.norm(best_position - expected_x_array))
+    return sum(
+        np.abs(best_position[i] - expected_x_array[i])
+        for i in range(len(best_position))
+    )
