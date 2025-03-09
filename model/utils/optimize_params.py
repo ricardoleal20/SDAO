@@ -7,10 +7,9 @@ from itertools import repeat
 import optuna
 import numpy as np
 from model.sdao import SDAO, SDAOParams
-
-# Import the functions
 from model.solver import ExperimentFunction
 from model.functions.bench_funcs import bench_funcs
+from model.functions.stoch_funcs import stoch_funcs
 
 
 # 1. Define the objective function
@@ -18,7 +17,7 @@ def objective(
     trial: optuna.Trial,
     dimension: int,
     num_experiments: int,
-    objective_functions: list[ExperimentFunction],
+    objective_functions: list[list[ExperimentFunction]],
 ) -> float:
     """
     Objective function to optimize SDAO parameters.
@@ -40,6 +39,7 @@ def objective(
     diffusion_coeff = trial.suggest_float("diffusion_coeff", 0.1, 5.0)
     density_radius = trial.suggest_float("density_radius", 0.1, 5.0)
     decay_rate = trial.suggest_float("decay_rate", 1e-4, 1e-1)
+    contract_every = trial.suggest_int("contract_every", 1, 50)
 
     # 3. Configure SDAO parameters
     sdao_params: SDAOParams = {
@@ -48,6 +48,7 @@ def objective(
         "diffusion_coeff": diffusion_coeff,
         "density_radius": density_radius,
         "decay_rate": decay_rate,
+        "contract_every": contract_every,
     }
 
     # 4. Initialize SDAO with the suggested parameters
@@ -61,16 +62,20 @@ def objective(
     # 5. Run SDAO multiple times and average the results
     results = []
     for _ in repeat(None, num_experiments):
-        exp_results = []
-        for experiment in objective_functions:
-            # Get the objective function and bounds from here
-            objective_fn = experiment["call"]
-            bounds = experiment["domain"]
-            dimension = experiment.get("dimension", dimension)
-            # Then, run the optimization
-            best_value, _ = sdao.optimize(objective_fn, bounds, dimension)
-            # Append the best value to the results
-            exp_results.append(best_value)
+        func_results = []
+        for functions in objective_functions:
+            exp_results = []
+            for experiment in functions:
+                # Get the objective function and bounds from here
+                objective_fn = experiment["call"]
+                bounds = experiment["domain"]
+                dimension = experiment.get("dimension", dimension)
+                # Then, run the optimization
+                best_value, _ = sdao.optimize(objective_fn, bounds, dimension)
+                # Append the best value to the results
+                exp_results.append(best_value)
+            # Append the average result from the experiment
+            func_results.append(np.mean(exp_results))
         # Append the average result from the experimental obtained
         results.append(np.mean(exp_results))
 
@@ -81,9 +86,9 @@ def objective(
 def optimize_parameters():
     """Main function to execute the SDAO parameter optimization."""
     # Define problem parameters
-    dimension = 100  # Dimension for the optimization problems
+    dimension = 50  # Dimension for the optimization problems
     num_experiments = 15  # Number of experiments to average
-    obj_fncs = bench_funcs  # Objective functions to optimize
+    obj_fncs = [bench_funcs, stoch_funcs]  # Objective functions to optimize
     # Create the Optuna study
     study = optuna.create_study(direction="minimize")
     # * Wrap the objective function with the necessary arguments

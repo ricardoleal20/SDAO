@@ -2,7 +2,6 @@
 Run the algorithm...
 """
 
-from typing import Literal
 from argparse import ArgumentParser
 import warnings
 from functools import partial
@@ -101,7 +100,22 @@ def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
     for alg_name, bench in benchmarks.items():
         # Extract the mean best values for each algorithm
         values = {
-            func: np.mean([res["best_value"] for res in results])
+            func: {
+                # The percentual error
+                "e": round(
+                    np.mean(
+                        [
+                            res["error"] if res["error"] else res["best_value"]
+                            for res in results
+                        ]
+                    ),
+                    2,
+                ),
+                # The time taken
+                "t": round(np.mean([res["time"] for res in results]), 4),
+                # The memory usage
+                "m": round(np.mean([res["memory"] for res in results]), 4),
+            }
             # * Note: The log is to convert the values to a better scale
             # * for visualization purposes.
             # * This is going to standardize the values to a log scale.
@@ -114,7 +128,7 @@ def show_results(benchmarks: dict[str, list[BenchmarkResult]]) -> None:
     print(dataframe)
 
 
-def functions_due_to_scenario(scenario: Literal[0, 1, 2]) -> list[ExperimentFunction]:
+def functions_due_to_scenario(scenario: int) -> list[ExperimentFunction]:
     """Due to the scenario, return the experiment functions to use!"""
     match scenario:
         case 0:
@@ -223,10 +237,12 @@ if __name__ == "__main__":
         num_particles=50,
         version=1,
         params={
-            "learning_rate": 0.01,
-            "memory_coeff": 0.5,
-            "decay_rate": 0.01,
-            "diffusion_coeff": 1,
+            "learning_rate": 0.07590119405199841,
+            "memory_coeff": 0.5089362625788614,
+            "diffusion_coeff": 1.3331853930264315,
+            "density_radius": 3.204511237386837,
+            "decay_rate": 0.0419414119958853,
+            "contract_every": 2,
         },
         verbose=args.verbose,
     )
@@ -298,7 +314,7 @@ if __name__ == "__main__":
         # Create the solver
         solver = Solver(
             num_experiments=args.experiments,
-            functions=functions_due_to_scenario(int(scenario)),
+            functions=functions_due_to_scenario(scenario),
         )
         # Run the benchmark
         benchmarks_results: dict[str, list[BenchmarkResult]] = {}

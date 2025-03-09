@@ -30,6 +30,7 @@ class SDAOParams(TypedDict):
     diffusion_coeff: float
     density_radius: float
     decay_rate: float
+    contract_every: int
 
 
 @dataclass
@@ -98,6 +99,12 @@ class SDAO(Algorithm):
         dimension: int,
     ) -> tuple[float, np.ndarray]:
         """Optimize the objective function using the SDAO algorithm."""
+        # Get the lambda parameter for the adaptive learning rate
+        lambda_learning_rate = (
+            np.log(0.1 * self._params["learning_rate"]) / self._n_iter
+        )
+        og_memory_coeff = self._params["memory_coeff"]
+        og_learning_rate = self._params["learning_rate"]
         # Save original bounds for later contraction
         original_bounds = bounds if isinstance(bounds, tuple) else list(bounds)
 
@@ -184,8 +191,16 @@ class SDAO(Algorithm):
             diff_coeff = diff_time_based + weight * (
                 diff_density_based - diff_time_based
             )
+            # Adapt also the learning rate
+            self._params["learning_rate"] = og_learning_rate * np.exp(
+                -lambda_learning_rate * k
+            )
+            self._params["memory_coeff"] = og_memory_coeff * (  # type: ignore
+                1 + np.mean([p.stagnation_counter for p in particles]) / (self._n_iter)
+            )
             # # Every fixed number of iterations, contract the domain
-            if (k + 1) % 20 == 0:  # Do it every 20 iterations ! Maybe a parameter?
+            contract = (k + 1) % self._params["contract_every"] == 0
+            if contract:  # Do it every 20 iterations ! Maybe a parameter?
                 bounds = self.__contract_bounds(
                     original_bounds, self._best_part.best_position
                 )
@@ -202,6 +217,9 @@ class SDAO(Algorithm):
             if self._v and (k % 10 == 0 or k == self._n_iter - 1):
                 print(f"Iteration [{k}] | Best Value = {self._best_part.best_value}")
 
+        # Return the original learning rate...
+        self._params["learning_rate"] = og_learning_rate
+        self._params["memory_coeff"] = og_memory_coeff
         # Return the best particle found
         return self._best_part.best_value, self._best_part.best_position
 

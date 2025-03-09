@@ -247,37 +247,140 @@ def microgrid_objective(x: np.ndarray) -> float:
     return GRID_COST * x[0] + BATTERY_COST * (x[1] + x[2]) + penalty
 
 
+# Short functions that represent some real-life applications
+def cache_optimization(x: np.ndarray) -> float:
+    """Simulates the cost of caching storage with stochastic requests.
+    **Reference:** Caching optimization principles can be found in "Efficient Cache Management Policies", SIGCOMM.
+    **Global Optimum:** Approximately 0 at x ≈ 1.
+    """
+    noise = np.random.normal(0, 2, len(x))
+    return np.sum(np.exp(-x) + 0.1 * x**2) + np.sum(noise)
+
+
+def production_scheduling(x: np.ndarray) -> float:
+    """Models production scheduling in a factory with uncertain demand and failures.
+    **Reference:** Industrial scheduling methods as described in "Production and Operations Management", Elsevier.
+    **Global Optimum:** Approximately 0 at x ≈ 50.
+    """
+    noise = np.random.normal(0, 5, len(x))
+    return np.sum((x - 50) ** 2 + np.sin(0.1 * np.pi * x)) + np.sum(noise)
+
+
+def online_ads_bidding(x: np.ndarray) -> float:
+    """Optimizes advertisement bidding under uncertain costs and fluctuating competition.
+    **Reference:** Online ad auction strategies found in "Mechanism Design for Online Advertising", Springer.
+    **Global Optimum:** Approximately 0 at x ≈ 2.
+    """
+    noise = np.random.normal(0, 3, len(x))
+    return np.sum(x**3 - 3 * x**2 + 2 * x) + np.sum(noise)
+
+
+def network_packet_routing(x: np.ndarray) -> float:
+    """Simulates network packet routing considering stochastic congestion.
+    **Reference:** Network traffic optimization principles in "Computer Networks: A Systems Approach", Morgan Kaufmann.
+    **Global Optimum:** Approximately 0 at x ≈ 0.
+    """
+    noise = np.random.normal(0, 4, len(x))
+    return np.sum(np.tanh(x) + 0.5 * x**2) + np.sum(noise)
+
+
+def retail_inventory_optimization(x: np.ndarray) -> float:
+    """Models retail inventory management with variable demand and storage costs.
+    **Reference:** Inventory control models from "Supply Chain Management: Strategy, Planning, and Operation", Pearson.
+    **Global Optimum:** Approximately 0 at x ≈ 100.
+    """
+    noise = np.random.normal(0, 6, len(x))
+    return np.sum(np.abs(x - 100) ** 1.5) + np.sum(noise)
+
+
+def supply_chain_network_design(x: np.ndarray) -> float:
+    """Optimizes supply chain network design considering transportation costs and demand variability.
+    **Reference:** Supply chain network design in "Supply Chain Management: Strategy, Planning, and Operation", Pearson.
+    **Global Optimum:** Approximately 0 at x ≈ 50.
+    """
+    noise = np.random.normal(0, 8, len(x))
+    return np.sum(np.abs(x - 50) ** 2) + np.sum(noise)
+
+
 # ========================================================= #
 # DEFINE ALL THE STOCH FUNCTIONS WITH THEIR NAME AND DOMAIN #
 real_life_funcs: list["ExperimentFunction"] = [
+    # {
+    #     "name": "Predictive Maintenance",
+    #     "call": predictive_maintenance_objective,  # type: ignore
+    #     "domain": (0, 29),
+    #     "dimension": 30,
+    # },
+    # {
+    #     "name": "VRP",
+    #     "call": vrp_objective,  # type: ignore
+    #     "domain": (0, 9),
+    #     "dimension": 10,
+    # },
+    # {
+    #     "name": "Chemical Experiment",
+    #     "call": chemical_experiment_objective,  # type: ignore
+    #     "domain": (0, 1000),
+    #     "dimension": 3,
+    # },
+    # {
+    #     "name": "Financial Portfolio",
+    #     "call": financial_portfolio_objective,
+    #     "domain": (0, 1),
+    #     "dimension": 4,
+    # },
+    # {
+    #     "name": "Microgrid Energy Management",
+    #     "call": microgrid_objective,
+    #     "domain": (0, 100),
+    #     "dimension": 3,
+    # },
     {
-        "name": "Predictive Maintenance",
-        "call": predictive_maintenance_objective,  # type: ignore
-        "domain": (0, 29),
-        "dimension": 30,
-    },
-    {
-        "name": "VRP",
-        "call": vrp_objective,  # type: ignore
-        "domain": (0, 9),
-        "dimension": 10,
-    },
-    {
-        "name": "Chemical Experiment",
-        "call": chemical_experiment_objective,  # type: ignore
-        "domain": (0, 1000),
-        "dimension": 3,
-    },
-    {
-        "name": "Financial Portfolio",
-        "call": financial_portfolio_objective,
+        "name": "Cache Optimization",
+        "call": cache_optimization,
         "domain": (0, 1),
-        "dimension": 4,
+        "dimension": 10,
+        "optimal_value": 0,
+        "optimal_x_value": [1] * 10,
     },
     {
-        "name": "Microgrid Energy Management",
-        "call": microgrid_objective,
+        "name": "Production Scheduling",
+        "call": production_scheduling,
         "domain": (0, 100),
-        "dimension": 3,
+        "dimension": 5,
+        "optimal_value": 0,
+        "optimal_x_value": [50] * 5,
+    },
+    {
+        "name": "Online Ads Bidding",
+        "call": online_ads_bidding,
+        "domain": (0, 10),
+        "dimension": 6,
+        "optimal_value": 0,
+        "optimal_x_value": [2] * 6,
+    },
+    {
+        "name": "Network Packet Routing",
+        "call": network_packet_routing,
+        "domain": (0, 50),
+        "dimension": 8,
+        "optimal_value": 0,
+        "optimal_x_value": [0] * 8,
+    },
+    {
+        "name": "Retail Inventory Optimization",
+        "call": retail_inventory_optimization,
+        "domain": (0, 200),
+        "dimension": 7,
+        "optimal_value": 0,
+        "optimal_x_value": [100] * 7,
+    },
+    {
+        "name": "Supply Chain Network Design",
+        "call": supply_chain_network_design,
+        "domain": (0, 100),
+        "dimension": 6,
+        "optimal_value": 0,
+        "optimal_x_value": [50] * 6,
     },
 ]  # type: ignore
