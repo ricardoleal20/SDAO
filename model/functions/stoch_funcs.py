@@ -255,29 +255,111 @@ def stochastic_salomon_function(x: np.ndarray) -> float:
 # ========================================================= #
 # DEFINE ALL THE STOCH FUNCTIONS WITH THEIR NAME AND DOMAIN #
 stoch_funcs: list["ExperimentFunction"] = [
-    {"name": "Sphere", "call": stochastic_sphere_function, "domain": (-5.12, 5.12)},
+    {
+        "name": "Sphere",
+        "call": stochastic_sphere_function,
+        "domain": (-5.12, 5.12),
+        # In the classical Sphere function, the global minimum is
+        # at x = [0, 0, ..., 0], and the function value is 0.
+        "optimal_x_value": [0.0],
+        "optimal_value": 0.0,
+    },
     {
         "name": "Rosenbrock",
         "call": stochastic_rosenbrock_function,
         "domain": (-5.0, 10.0),
+        # In the Rosenbrock function (a=1,b=100), the global minimum is
+        # at x = [1, 1, ..., 1], with function value = 0.
+        "optimal_x_value": [1.0],
+        "optimal_value": 0.0,
     },
     {
         "name": "Rastrigin",
         "call": stochastic_rastrigin_function,
         "domain": (-5.12, 5.12),
+        # The deterministic Rastrigin’s global minimum is at x=[0,0,...,0],
+        # with function value = 0.
+        "optimal_x_value": [0.0],
+        "optimal_value": 0.0,
     },
-    {"name": "Ackley", "call": stochastic_ackley_function, "domain": (-32.768, 32.768)},
-    {"name": "Schwefel", "call": stochastic_schwefel_function, "domain": (-500, 500)},
+    {
+        "name": "Ackley",
+        "call": stochastic_ackley_function,
+        "domain": (-32.768, 32.768),
+        # The classical Ackley function is minimized at x=[0,0,...,0],
+        # with function value = 0.
+        "optimal_x_value": [0.0],
+        "optimal_value": 0.0,
+    },
+    {
+        "name": "Schwefel",
+        "call": stochastic_schwefel_function,
+        "domain": (-500, 500),
+        # The Schwefel function’s global minimum is around x_i=420.9687,
+        # for each dimension i, giving (nominally) f=0.
+        "optimal_x_value": [420.9687],
+        "optimal_value": 0.0,
+    },
     {
         "name": "Drop-Wave",
         "call": stochastic_drop_wave_function,
         "domain": (-5.12, 5.12),
+        # For this two-dimensional function, the standard formula is
+        # minimized at x=[0,0].  Because this code’s formula is offset
+        # (“return 1 - numerator/denominator”), the nominal minimum
+        # yields ~0.0 at (0,0).
+        "optimal_x_value": [0.0, 0.0],
+        "optimal_value": 0.0,
     },
-    {"name": "Booth", "call": stochastic_booth_function, "domain": (-10, 10)},
-    {"name": "Beale", "call": stochastic_beale_function, "domain": (-4.5, 4.5)},
-    # {"name": "Weierstrass", "call": weierstrass_function,
-    #    "domain": (-0.5, 0.5)},
-    {"name": "Griewank", "call": stochastic_griewank_function, "domain": (-600, 600)},
-    {"name": "Happy Cat", "call": stochastic_happy_cat_function, "domain": (-2.0, 2.0)},
-    {"name": "Salomon", "call": stochastic_salomon_function, "domain": (-100, 100)},
-]  # type: ignore
+    {
+        "name": "Booth",
+        "call": stochastic_booth_function,
+        "domain": (-10, 10),
+        # Booth is a 2D function: the known global min is (1,3), yielding f=0.
+        "optimal_x_value": [1.0, 3.0],
+        "optimal_value": 0.0,
+    },
+    {
+        "name": "Beale",
+        "call": stochastic_beale_function,
+        "domain": (-4.5, 4.5),
+        # Beale is also 2D: the known minimum is (3, 0.5), giving f=0.
+        "optimal_x_value": [3.0, 0.5],
+        "optimal_value": 0.0,
+    },
+    {
+        "name": "Weierstrass",
+        "call": stochastic_weierstrass_function,
+        "domain": (-0.5, 0.5),
+        # The normal standard Weierstrass function has its global minimum at x=0, f=0.
+        "optimal_x_value": [0.0],
+        "optimal_value": 0.0,
+    },
+    {
+        "name": "Griewank",
+        "call": stochastic_griewank_function,
+        "domain": (-600, 600),
+        # The standard Griewank has its global minimum at x=[0,0,...,0], f=0.
+        "optimal_x_value": [0.0],
+        "optimal_value": 0.0,
+    },
+    {
+        "name": "Happy Cat",
+        "call": stochastic_happy_cat_function,
+        "domain": (-2.0, 2.0),
+        # “Happy Cat” has multiple forms in different references;
+        # in this custom variant, one typical guess is around x=[0,...,0].
+        # For many setups, f(0) can be near or at the global minimum
+        # (though it can be negative for 1D, positive for multi-D).
+        "optimal_x_value": [0.0],
+        "optimal_value": 0.0,
+    },
+    {
+        "name": "Salomon",
+        "call": stochastic_salomon_function,
+        "domain": (-100, 100),
+        # The Salomon function is minimized at x=[0,0,...,0], f=0.
+        "optimal_x_value": [0.0],
+        "optimal_value": 0.0,
+    },
+]
