@@ -10,6 +10,8 @@ from model.sdao import SDAO, SDAOParams
 from model.solver import ExperimentFunction
 from model.functions.bench_funcs import bench_funcs
 from model.functions.stoch_funcs import stoch_funcs
+from model.functions.cec_funcs import cec_funcs
+from model.functions.real_life_funcs import real_life_funcs
 
 
 # 1. Define the objective function
@@ -70,10 +72,12 @@ def objective(
                 objective_fn = experiment["call"]
                 bounds = experiment["domain"]
                 dimension = experiment.get("dimension", dimension)
+                # Get the optimal value
+                optimal_value = experiment.get("optimal_value", 0)
                 # Then, run the optimization
-                best_value, _ = sdao.optimize(objective_fn, bounds, dimension)
-                # Append the best value to the results
-                exp_results.append(best_value)
+                best_value, _ = sdao.optimize(objective_fn, bounds, dimension)  # type: ignore
+                # Append the absolute error obtained to the results
+                exp_results.append(abs(best_value - optimal_value))
             # Append the average result from the experiment
             func_results.append(np.mean(exp_results))
         # Append the average result from the experimental obtained
@@ -88,7 +92,12 @@ def optimize_parameters():
     # Define problem parameters
     dimension = 50  # Dimension for the optimization problems
     num_experiments = 15  # Number of experiments to average
-    obj_fncs = [bench_funcs, stoch_funcs]  # Objective functions to optimize
+    obj_fncs = [
+        bench_funcs,
+        stoch_funcs,
+        real_life_funcs,
+        cec_funcs,
+    ]  # Objective functions to optimize
     # Create the Optuna study
     study = optuna.create_study(direction="minimize")
     # * Wrap the objective function with the necessary arguments
@@ -99,7 +108,7 @@ def optimize_parameters():
         objective_functions=obj_fncs,  # type: ignore
     )
     # Execute the optimization
-    study.optimize(sdao_obj, n_trials=10, show_progress_bar=True)
+    study.optimize(sdao_obj, n_trials=25, show_progress_bar=True)
 
     # Display the results
     print(32 * "=")
