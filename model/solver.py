@@ -22,7 +22,7 @@ class ExperimentFunction(TypedDict):
     """Set the experiment function, along with their domain."""
 
     name: str
-    call: Callable[[np.ndarray], float | int]
+    call: Callable[[np.ndarray], float | int | np.signedinteger]
     domain: tuple[float, float]
     dimension: NotRequired[int]
     optimal_value: NotRequired[float]
@@ -62,7 +62,7 @@ class Solver:
         model: Callable[
             [
                 # The objective function
-                Callable[[np.ndarray], float | int],
+                Callable[[np.ndarray], float | int | np.signedinteger],
                 # The domain
                 Sequence[tuple[float, float]] | tuple[float, float],
                 # The dimension

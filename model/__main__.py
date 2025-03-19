@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     # Check the scenarios that we have available... if we have  "all" as scenario
     # then we should
-    scenarios = [0, 1, 2, 3, 4] if args.scenario == "all" else [int(args.scenario)]
+    scenarios = [0, 1, 2, 3] if args.scenario == "all" else [int(args.scenario)]
     # ====================================== #
     #                Models                  #
     # ====================================== #
@@ -237,12 +237,12 @@ if __name__ == "__main__":
         num_particles=50,
         version=1,
         params={
-            "learning_rate": 0.07590119405199841,
-            "memory_coeff": 0.5089362625788614,
-            "diffusion_coeff": 1.3331853930264315,
-            "density_radius": 3.204511237386837,
-            "decay_rate": 0.0419414119958853,
-            "contract_every": 2,
+            "learning_rate": 0.08009472801977902,
+            "memory_coeff": 0.6462704921052449,
+            "diffusion_coeff": 3.952340863752026,
+            "density_radius": 2.2081413057223624,
+            "decay_rate": 0.07500855901413722,
+            "contract_every": 10,
         },
         verbose=args.verbose,
     )

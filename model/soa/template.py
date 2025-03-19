@@ -13,7 +13,7 @@ class Algorithm(ABC):  # pylint: disable=R0903
     @abstractmethod
     def optimize(
         self,
-        objective_fn: Callable[[np.ndarray], float | int],
+        objective_fn: Callable[[np.ndarray], float | int | np.signedinteger],
         bounds: Sequence[tuple[float, float]] | tuple[float, float],
         dimension: int,
     ) -> tuple[float, np.ndarray]:
