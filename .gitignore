@@ -31,7 +31,7 @@ results/
 *.pyo
 __pycache__/
 
-
-# Ignore the .txt and .tex files
+# Ignore the .txt, .tex, .pkl files
 *.tex
 *.txt
+*.pkl
