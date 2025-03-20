@@ -8,7 +8,7 @@ from typing import Callable, Sequence
 import numpy as np
 
 # Local imports
-from model.soa.template import Algorithm
+from model.soa.template import Algorithm, StepSolution
 
 
 class AMSO(Algorithm):  # pylint: disable=R0903
@@ -18,8 +18,15 @@ class AMSO(Algorithm):  # pylint: disable=R0903
     _num_swarms: int
     _swarm_size: int
     _verbose: bool
+    _iterations: list[StepSolution]
 
-    __slots__ = ["_num_swarms", "_swarm_size", "_n_iterations", "_verbose"]
+    __slots__ = [
+        "_num_swarms",
+        "_swarm_size",
+        "_n_iterations",
+        "_verbose",
+        "_iterations",
+    ]
 
     def __init__(
         self,
@@ -41,6 +48,7 @@ class AMSO(Algorithm):  # pylint: disable=R0903
         self._swarm_size = swarm_size
         self._n_iterations = n_iterations
         self._verbose = verbose
+        self._iterations = []
 
     def optimize(  # pylint: disable=R0914
         self,
@@ -90,10 +98,6 @@ class AMSO(Algorithm):  # pylint: disable=R0903
 
                 # Update swarm bests
                 for i in range(self._swarm_size):
-                    # print(
-                    #    f"How many positions: {len(positions)} and ({len(positions[0])} having {positions[0]})")
-                    # print(
-                    #    f"{i}: Fitness: {fitness[i]} and Swarm Best: {swarm['best_fitness']}")
                     if fitness[i] < swarm["best_fitness"]:
                         swarm["best_positions"] = positions[i]
                         swarm["best_fitness"] = fitness[i]
@@ -126,5 +130,7 @@ class AMSO(Algorithm):  # pylint: disable=R0903
                 print(
                     f"Iteration {iteration + 1}, Global Best Fitness: {global_best_fitness}"
                 )
+            # Append the iteration data
+            self._iterations.append((iteration, global_best_fitness))
 
         return global_best_fitness, global_best_position

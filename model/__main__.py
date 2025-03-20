@@ -4,6 +4,7 @@ Run the algorithm...
 
 from argparse import ArgumentParser
 import warnings
+import pickle
 from functools import partial
 import matplotlib.pyplot as plt  # pylint: disable=E0401
 import pydash as _py
@@ -285,13 +286,7 @@ if __name__ == "__main__":
     algorithms: list[Algorithm] = []
     match args.algorithm:
         case "all":
-            algorithms = [
-                sdao,
-                # sfs, sgd,
-                shade,
-                path_relinking,
-                # amso, tlpso
-            ]
+            algorithms = [sdao, sfs, sgd, shade, path_relinking, amso, tlpso]
         case "sdao":
             algorithms = [sdao]
         case "sfs":
@@ -324,12 +319,17 @@ if __name__ == "__main__":
                 f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms)}\033[0m"
             )
             print(32 * "=")
-            results = solver.benchmark(dimension=args.dimension, model=alg.optimize)
+            results = solver.benchmark(
+                dimension=args.dimension, model=alg.optimize, trajectory=alg.trajectory
+            )
             # Print the results
             benchmarks_results[NAME] = results
             # New line
             print("\n")
 
+        # Store the results for this scenario
+        with open(f"scenario_{scenario}_d_{args.dimension}.pkl", "wb") as f:
+            pickle.dump(benchmarks_results, f)
         # Plot the results as a bar chart
         print("Plotting the results...")
         # ====================================== #

@@ -9,7 +9,7 @@ from typing import Callable, Sequence
 import numpy as np
 
 # Local imports
-from model.soa.template import Algorithm
+from model.soa.template import Algorithm, StepSolution
 
 
 class SHADEwithILS(Algorithm):  # pylint: disable=R0903
@@ -20,6 +20,7 @@ class SHADEwithILS(Algorithm):  # pylint: disable=R0903
     _memory_size: int
     _memory_cr: np.ndarray
     _memory_f: np.ndarray
+    _iterations: list[StepSolution]
     _verbose: bool
 
     __slots__ = [
@@ -28,6 +29,7 @@ class SHADEwithILS(Algorithm):  # pylint: disable=R0903
         "_memory_size",
         "_memory_cr",
         "_memory_f",
+        "_iterations",
         "_verbose",
     ]
 
@@ -54,6 +56,7 @@ class SHADEwithILS(Algorithm):  # pylint: disable=R0903
         self._memory_f = np.full(memory_size, 0.5)
         # Extra params
         self._verbose = verbose
+        self._iterations = []
 
     def optimize(  # pylint: disable=R0914
         self,
@@ -72,6 +75,7 @@ class SHADEwithILS(Algorithm):  # pylint: disable=R0903
         Returns:
         - tuple of best fitness and best solution found.
         """
+        self._iterations = []
         fn_bounds = [bounds] if isinstance(bounds, tuple) else bounds
         # Initialize population
         population = np.array(
@@ -170,5 +174,6 @@ class SHADEwithILS(Algorithm):  # pylint: disable=R0903
 
             if self._verbose:
                 print(f"Iteration {iteration + 1}, Best Fitness: {best_fitness}")
+            self._iterations.append((iteration, best_fitness))
 
         return best_fitness, best_solution

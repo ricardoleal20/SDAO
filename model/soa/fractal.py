@@ -10,11 +10,13 @@ from typing import Sequence, Callable
 import numpy as np
 
 # Local imports
-from model.soa.template import Algorithm
+from model.soa.template import Algorithm, StepSolution
 
 
 class StochasticFractalSearch(Algorithm):
     """Stochastic Fractal Search algorithm."""
+
+    _iterations: list[StepSolution]
 
     __slots__ = [
         "_n_population",
@@ -22,6 +24,7 @@ class StochasticFractalSearch(Algorithm):
         "_fractal_factor",
         "_dim",
         "_verbose",
+        "_iterations",
     ]
 
     def __init__(
@@ -44,6 +47,7 @@ class StochasticFractalSearch(Algorithm):
         self._n_iterations = n_iterations
         self._fractal_factor = fractal_factor
         self._verbose = verbose
+        self._iterations = []
 
     def __init_population(
         self,
@@ -100,6 +104,7 @@ class StochasticFractalSearch(Algorithm):
         dimension: int,
     ) -> tuple[float, np.ndarray]:
         """Perform the optimization using Stochastic Fractal Search."""
+        self._iterations = []
         # Initialize population
         population = self.__init_population(bounds, dimension)
         fitness = self.__evaluate_population(population, objective_fn)
@@ -122,5 +127,7 @@ class StochasticFractalSearch(Algorithm):
                 print(
                     f"Iteration {iteration + 1}/{self._n_iterations}: Best Fitness = {best_fitness}"
                 )
+            # Append current iteration's best fitness to the list
+            self._iterations.append((iteration, best_fitness))
 
         return best_fitness, best_solution

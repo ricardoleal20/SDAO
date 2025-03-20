@@ -10,7 +10,7 @@ from typing import Callable, Sequence
 import numpy as np
 
 # Local imports
-from model.soa.template import Algorithm
+from model.soa.template import Algorithm, StepSolution
 
 
 class AlgebraicSGD(Algorithm):  # pylint: disable=R0903
@@ -18,9 +18,10 @@ class AlgebraicSGD(Algorithm):  # pylint: disable=R0903
 
     learning_rate: float
     n_iterations: int
+    _iterations: list[StepSolution]
     _verbose: bool
 
-    __slots__ = ["learning_rate", "n_iterations", "_verbose"]
+    __slots__ = ["learning_rate", "n_iterations", "_iterations", "_verbose"]
 
     def __init__(
         self,
@@ -38,6 +39,7 @@ class AlgebraicSGD(Algorithm):  # pylint: disable=R0903
         """
         self.learning_rate = learning_rate
         self.n_iterations = n_iterations
+        self._iterations = []
         self._verbose = verbose
 
     def optimize(
@@ -57,6 +59,7 @@ class AlgebraicSGD(Algorithm):  # pylint: disable=R0903
         Returns:
         - tuple of best fitness and best solution found.
         """
+        self._iterations = []
         fn_bounds = [bounds] if isinstance(bounds, tuple) else bounds
 
         # Initialize position randomly within bounds
@@ -89,6 +92,8 @@ class AlgebraicSGD(Algorithm):  # pylint: disable=R0903
 
             if self._verbose:
                 print(f"Iteration {iteration}, Best Fitness: {best_fitness}")
+            # Append the iteration and fitness to the list
+            self._iterations.append((iteration, best_fitness))
 
         return best_fitness, best_position
 

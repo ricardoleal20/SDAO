@@ -4,7 +4,7 @@ from typing import Callable, Sequence
 import numpy as np
 
 # Local imports
-from model.soa.template import Algorithm
+from model.soa.template import Algorithm, StepSolution
 
 
 class PathRelinking(Algorithm):
@@ -14,8 +14,15 @@ class PathRelinking(Algorithm):
     _n_population: int
     _elite_ratio: float
     _verbose: bool
+    _iterations: list[StepSolution]
 
-    __slots__ = ["_n_population", "_n_iterations", "_elite_ratio", "_verbose"]
+    __slots__ = [
+        "_n_population",
+        "_n_iterations",
+        "_elite_ratio",
+        "_verbose",
+        "_iterations",
+    ]
 
     def __init__(
         self,
@@ -36,6 +43,7 @@ class PathRelinking(Algorithm):
         self._n_iterations = n_iterations
         self._elite_ratio = elite_ratio
         self._verbose = verbose
+        self._iterations = []
 
     def optimize(  # pylint: disable=R0914
         self,
@@ -54,6 +62,7 @@ class PathRelinking(Algorithm):
         Returns:
         - tuple of best fitness and best solution found.
         """
+        self._iterations = []
         fn_bounds = [bounds] if isinstance(bounds, tuple) else bounds
         # Initialize population
         population = np.array(
@@ -81,7 +90,9 @@ class PathRelinking(Algorithm):
                 if i not in elite_indices:
                     elite_partner = elites[np.random.randint(elite_count)]
                     new_solution = self.path_relinking(
-                        population[i], elite_partner, fn_bounds
+                        population[i],
+                        elite_partner,
+                        fn_bounds,  # type: ignore
                     )  # type: ignore
                     new_population[i] = new_solution
 
@@ -98,6 +109,8 @@ class PathRelinking(Algorithm):
 
             if self._verbose:
                 print(f"Iteration {iteration + 1}, Best Fitness: {best_fitness}")
+            # Append iteration data
+            self._iterations.append((iteration, best_fitness))
 
         return best_fitness, best_solution
 

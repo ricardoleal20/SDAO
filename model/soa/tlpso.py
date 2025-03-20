@@ -8,7 +8,7 @@ from typing import Callable, Sequence
 import numpy as np
 
 # Local imports
-from model.soa.template import Algorithm
+from model.soa.template import Algorithm, StepSolution
 
 
 class TLPSO(Algorithm):  # pylint: disable=R0903
@@ -18,8 +18,15 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
     _global_swarm_size: int
     _local_swarm_size: int
     _n_iterations: int
+    _iterations: list[StepSolution]
 
-    __slots__ = ["_global_swarm_size", "_local_swarm_size", "_n_iterations", "_verbose"]
+    __slots__ = [
+        "_global_swarm_size",
+        "_local_swarm_size",
+        "_n_iterations",
+        "_verbose",
+        "_iterations",
+    ]
 
     def __init__(
         self,
@@ -40,6 +47,7 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
         self._local_swarm_size = local_swarm_size
         self._n_iterations = max_iterations
         self._verbose = verbose
+        self._iterations = []
 
     def optimize(
         self,
@@ -62,6 +70,7 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
             raise NotImplementedError(
                 "TLPSO only supports a single range for all dimensions."
             )
+        self._iterations = []
         # Initialize global swarm
         global_positions = np.array(
             [
@@ -145,5 +154,6 @@ class TLPSO(Algorithm):  # pylint: disable=R0903
                 print(
                     f"Iteration {iteration + 1}, Global Best Fitness: {global_best_fitness}"
                 )
+            self._iterations.append((iteration, global_best_fitness))
 
         return global_best_fitness, global_best_position

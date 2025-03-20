@@ -8,7 +8,7 @@ import numpy as np
 from scipy.spatial import KDTree
 
 # Local imports
-from model.soa.template import Algorithm
+from model.soa.template import Algorithm, StepSolution
 
 
 class SDAOParams(TypedDict):
@@ -67,8 +67,17 @@ class SDAO(Algorithm):
     _v: bool
     _version: Literal[0, 1, 2]
     _best_part: Particle
+    _iterations: list[StepSolution]
     # Slots of the class
-    __slots__ = ["_params", "_n_part", "_v", "_n_iter", "_version", "_best_part"]
+    __slots__ = [
+        "_params",
+        "_n_part",
+        "_v",
+        "_n_iter",
+        "_version",
+        "_best_part",
+        "_iterations",
+    ]
 
     def __init__(  # pylint: disable=R0913
         self,
@@ -87,6 +96,7 @@ class SDAO(Algorithm):
         self._version = version  # deprecated!
         # Add the best particule as None
         self._best_part = None  # type: ignore
+        self._iterations = []
 
     # ====================================== #
     #              Public methods            #
@@ -99,6 +109,8 @@ class SDAO(Algorithm):
         dimension: int,
     ) -> tuple[float, np.ndarray]:
         """Optimize the objective function using the SDAO algorithm."""
+        # Initialize the iterations list
+        self._iterations = []
         # Get the lambda parameter for the adaptive learning rate
         lambda_learning_rate = (
             np.log(0.1 * self._params["learning_rate"]) / self._n_iter
@@ -212,6 +224,9 @@ class SDAO(Algorithm):
             # Evalaute if this is better than the current best particle
             if current_best_part.best_value < self._best_part.best_value:
                 self._best_part = current_best_part
+
+            # Add the current iteration to the list of iterations and the best value
+            self._iterations.append((k, self._best_part.best_value))
 
             # Optional: Print progress ONLY if verbose is enabled
             if self._v and (k % 10 == 0 or k == self._n_iter - 1):

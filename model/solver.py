@@ -17,6 +17,9 @@ import numpy as np
 # Import TQDM for the progress bar
 from tqdm import tqdm
 
+# Local imports
+from model.soa.template import StepSolution
+
 
 class ExperimentFunction(TypedDict):
     """Set the experiment function, along with their domain."""
@@ -40,6 +43,7 @@ class BenchmarkResult(TypedDict):
     function: str
     time: float
     memory: float
+    trajectory: list[StepSolution]
 
 
 class Solver:
@@ -70,6 +74,7 @@ class Solver:
             ],
             tuple[float, np.ndarray],
         ],
+        trajectory: Callable[[], list[StepSolution]],
     ) -> list[BenchmarkResult]:
         """Benchmark the model using the given functions."""
         results: list[BenchmarkResult] = []
@@ -96,6 +101,7 @@ class Solver:
                         "best_value": best_value,
                         "best_position": best_position,
                         "function": func["name"],
+                        "trajectory": trajectory(),
                         "time": (time.time() - start_time)
                         * 1000,  # to convert it to microseconds
                         # Memory usage is initially in kilobytes, converting it to megabytes
