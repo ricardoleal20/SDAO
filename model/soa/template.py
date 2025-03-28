@@ -23,6 +23,6 @@ class Algorithm(ABC):  # pylint: disable=R0903
     ) -> tuple[float, np.ndarray]:
         """..."""
 
-    def get_iterations_solutions(self) -> list[StepSolution]:
-        """Return the list of iterations"""
+    def trajectory(self) -> list[StepSolution]:
+        """Return the trajectory of the algorithm solutions, giving the iteration number and the solution value"""
         return self._iterations
