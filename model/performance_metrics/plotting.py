@@ -144,7 +144,9 @@ def plot_general_absolute_error(
 
 
 def convergence_general_plot(
-    data: dict[int, dict[str, list[dict]]], store_as_pdf: bool = False
+    data: dict[int, dict[str, list[dict]]],
+    store_as_pdf: bool = False,
+    dimension: int = 10,
 ) -> None:
     """Create and save a PDF with convergence plots for each scenario coming from functions_due_to_scenario.
 
@@ -168,6 +170,13 @@ def convergence_general_plot(
     )
     linestyles = ("-", "--", "-.", ":", (0, (5, 2)), (0, (3, 1, 1, 1)), "-")
 
+    legend_position_per_scenario = {
+        0: (0.85, 0.2),
+        1: (0.5, 0.03),
+        2: (0.5, 0.53),
+        3: (0.85, 0.2),
+    }
+
     # Iterate over each scenario present in the data
     for scenario in sorted(data.keys()):
         # Get the functions associated with the scenario
@@ -181,7 +190,7 @@ def convergence_general_plot(
         num_rows = (
             num_functions + num_cols - 1
         ) // num_cols  # Integer division rounded up
-        fig, axes = plt.subplots(num_rows, num_cols, figsize=(15, 6 * num_rows))
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(17, 5 * num_rows))
 
         # Ensure we have an array of axes (flatten for easy iteration)
         if isinstance(axes, np.ndarray):
@@ -194,9 +203,14 @@ def convergence_general_plot(
             function_name = bench_func["name"]
             optimal_value = bench_func.get("optimal_value", 0)
             ax = axes[idx]
-            ax.set_title(function_name)
+            ax.set_title(
+                function_name
+                if "CEC" not in function_name
+                else function_name.replace("CEC", ""),
+                fontsize=20,
+            )
             ax.set_xlabel("Iterations")
-            ax.set_ylabel("Absolute Error (log scale)")
+            ax.set_ylabel("Absolute Error")
             ax.set_yscale("log")
             ax.grid(True, linestyle="--", alpha=0.5)
 
@@ -249,17 +263,23 @@ def convergence_general_plot(
                 )
 
             # Determine the y-axis limits for the zoomed-in view
-            all_errors = [
-                error for errors in errors_per_iter.values() for error in errors
-            ]
-            if all_errors:
-                min_error = max(min(all_errors), 1e-10)  # Avoid log(0) issues
-                max_error = min(
-                    max(all_errors), 1e3
-                )  # Limit to a reasonable upper bound
-                ax.set_ylim(bottom=min_error, top=max_error)
+            if dimension > 25 and function_name != "Xin-She Yang 1":
+                ax.set_ylim(bottom=1, top=1e10)
+            ax.set_xlim(left=0, right=300)
 
-            ax.legend(loc="upper right", fontsize=9)
+            # Remove individual legends
+            ax.legend().remove()
+
+        # Add a single legend outside the plot
+        handles, labels = ax.get_legend_handles_labels()
+        fig.legend(
+            handles,
+            labels,
+            loc="upper center",
+            bbox_to_anchor=legend_position_per_scenario[scenario],
+            ncol=1 if scenario not in [1, 2] else 7,
+            fontsize=20 if scenario not in [1, 2] else 16,
+        )
 
         # Delete empty subplots
         for j in range(idx + 1, len(axes)):
@@ -272,6 +292,126 @@ def convergence_general_plot(
         plt.tight_layout()
 
         # Store the PDF file for the current scenario
-        pdf_filename = f"convergence_plot_scenario_{scenario}.pdf"
+        pdf_filename = f"convergence_plot_scenario_{scenario}_d{dimension}.pdf"
         plt.savefig(pdf_filename, format="pdf", dpi=300)
         plt.close(fig)
+
+
+def convergence_summary_plot_paper(
+    data: dict[int, dict[str, list[dict]]],
+    dimension: int = 50,
+    store_as_pdf: bool = True,
+    output_name: str = "convergence_summary_main.pdf",
+):
+    """
+    Generates a 2x2 summary convergence plot for the main paper.
+    Each subplot corresponds to one benchmark category.
+
+    Parameters:
+    - data: Dictionary with all algorithm results.
+    - dimension: Dimension for which the results were taken.
+    - store_as_pdf: Save the figure to disk.
+    - output_name: File name for the exported figure.
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    axes = axes.flatten()
+
+    # Settings
+    selected = {
+        0: "Rastrigin",
+        1: "Ackley",
+        3: "CEC Shifted Rastrigin",
+        2: "Supply Chain Network Design",
+    }
+    limits_per_func = {
+        "Rastrigin": (1e-0, 1.25e3),
+        "Ackley": (1e-0, 4e1),
+        "CEC Shifted Rastrigin": (1e-0, 1.25e3),
+        "Supply Chain Network Design": (1e-0, 1e4),
+    }
+    colors = (
+        "#1f77b4",
+        "#ff7f0e",
+        "#2ca02c",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#e377c2",
+    )
+    linestyles = (
+        "-",
+        "--",
+        "-.",
+        ":",
+        (0, (5, 2)),
+        (0, (3, 1, 1, 1)),
+        "-",
+    )
+
+    for idx, (scenario, func_name) in enumerate(selected.items()):
+        ax = axes[idx]
+        data_scenario = data.get(scenario, {})
+        if not data_scenario:
+            continue
+
+        ax.set_title(func_name.replace("CEC", "").strip(), fontsize=20)
+        ax.set_xlabel("Iterations", fontsize=16)
+        ax.set_ylabel("Absolute Error", fontsize=16)
+        ax.set_yscale("log")
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+        for i, (algorithm, data_alg) in enumerate(data_scenario.items()):
+            # Extract data for the selected function
+            runs = [d for d in data_alg if d["function"] == func_name]
+            if not runs:
+                continue
+
+            errors_per_iter = {}
+            optimal_value = runs[0].get("optimal_value", 0)
+
+            for run in runs:
+                for it, val in run["trajectory"]:
+                    err = abs(val - optimal_value)
+                    errors_per_iter.setdefault(it, []).append(err)
+
+            if not errors_per_iter:
+                continue
+
+            iterations = sorted(errors_per_iter.keys())
+            mean_curve = [np.mean(errors_per_iter[it]) for it in iterations]
+            std_curve = [np.std(errors_per_iter[it]) for it in iterations]
+
+            ax.plot(
+                iterations,
+                mean_curve,
+                label=algorithm,
+                color=colors[i % len(colors)],
+                linestyle=linestyles[i % len(linestyles)],
+                linewidth=2,
+            )
+            ax.fill_between(
+                iterations,
+                np.array(mean_curve) - np.array(std_curve),
+                np.array(mean_curve) + np.array(std_curve),
+                color=colors[i % len(colors)],
+                alpha=0.15,
+            )
+
+        ax.set_xlim(left=0, right=300)
+        if dimension > 25:
+            ax.set_ylim(*limits_per_func[func_name])
+
+    # Global legend
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=7, fontsize=16)
+    plt.tight_layout()
+    # fig.suptitle(
+    #     f"Convergence Curves on Representative Functions (d = {dimension})",
+    #     fontsize=16,
+    # )
+
+    if store_as_pdf:
+        plt.savefig(output_name, dpi=300, bbox_inches="tight", format="pdf")
+        print(f"✅ Saved: {output_name}")
+    else:
+        plt.show()

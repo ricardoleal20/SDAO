@@ -167,18 +167,18 @@ def _post_hoc_test(
         # A1, A2, Median Difference, p, Significant, lower, upper
         (
             (comp[0], comp[1], comp[2], comp[3], comp[6], comp[4], comp[5])
-            if comp[0] == "SDAO"
-            # Move the SDAO to be the first column...
-            else (
-                # A1, A2, Median Difference, p, Significant, lower, upper
-                comp[1],
-                comp[0],
-                -comp[2],
-                comp[3],
-                comp[6],
-                -comp[4],
-                -comp[5],
-            )
+            # if comp[0] == "SDAO"
+            # # Move the SDAO to be the first column...
+            # else (
+            #     # A1, A2, Median Difference, p, Significant, lower, upper
+            #     comp[1],
+            #     comp[0],
+            #     -comp[2],
+            #     comp[3],
+            #     comp[6],
+            #     -comp[4],
+            #     -comp[5],
+            # )
         )
         for comp in comparisons
         if "SDAO" in comp[0] or "SDAO" in comp[1]

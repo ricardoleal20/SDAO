@@ -4,6 +4,10 @@ Generate the tables of different data processes
 
 from typing import Sequence
 import numpy as np
+from scipy.stats import f_oneway, wilcoxon
+
+# Local imports
+from model.utils.statistical_utils import _post_hoc_test
 
 _INPUT_DATA = dict[str, dict[str, float]]
 
@@ -108,3 +112,59 @@ def generate_mean_table(
     print("Mean Table for Algorithms...")
     print(table)
     print("\n")
+
+
+def generate_anova_result(data: dict[int, dict[str, list[dict]]]) -> None:
+    """Generate an ANOVA results for different"""
+    # Then, create s single array with the data for all the errors obtained, in all the functions for all the algorithms
+    for scenario, scenario_data in data.items():
+        # Create the data array
+        anova_data = [[e["error"] for e in d] for d in scenario_data.values()]
+        # Using this, get the anova result
+        f_result, p_result = f_oneway(*anova_data)
+        print(f"ANOVA Result for Scenario {scenario}:")
+        print(f"F-Value: {f_result}")
+        print(f"P-Value: {p_result}")
+        print("\n")
+
+
+def generate_post_hoc_test(data: dict[int, dict[str, list[dict]]]) -> None:
+    """Generate a post-hoc test for different"""
+    # Then, create s single array with the data for all the errors obtained, in all the functions for all the algorithms
+    for scenario, scenario_data in data.items():
+        # Create the data array
+        anova_data = [[e["error"] for e in d] for d in scenario_data.values()]
+        # Perform post-hoc test
+        post_hoc_result = _post_hoc_test(scenario_data, anova_data)  # type: ignore
+        print(f"Post-Hoc Result for Scenario {scenario}:")
+        print(post_hoc_result)
+        print("\n")
+
+
+def generate_wilcoxon_test(data: dict[int, dict[str, list[dict]]]) -> None:
+    """Generate a Wilcoxon test for different"""
+    # Then, create s single array with the data for all the errors obtained, in all the functions for all the algorithms
+    for scenario, scenario_data in data.items():
+        # Get the grouped data per function
+        grouped_data = {}
+        for alg, alg_data in scenario_data.items():
+            # Then, iterate over the algorithm data
+            func_data = {}
+            for d in alg_data:
+                if d["function"] not in func_data:
+                    func_data[d["function"]] = []
+                func_data[d["function"]].append(d["error"])
+            grouped_data[alg] = func_data
+        # Perform Wilcoxon test for SDAO against algorithm and each function
+        sdao_data = grouped_data["SDAO"]
+        for alg, func_errors in grouped_data.items():
+            if alg == "SDAO":
+                continue
+            for func, errors in func_errors.items():
+                # Perform Wilcoxon test for SDAO against algorithm and each function
+                wilcoxon_result = wilcoxon(errors, sdao_data[func])
+                print(
+                    f"Wilcoxon Result for Scenario {scenario}, Algorithm {alg}, Function {func}:"
+                )
+                print(wilcoxon_result)
+                print("\n")
