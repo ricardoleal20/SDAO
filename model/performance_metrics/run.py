@@ -52,8 +52,8 @@ def __run_metrics(scenario: str, dimension: str) -> tuple[dict[str, tp.Any], dic
     # Open the scenario pkl file if it exists
     data = __open_scenario_data(scenario, dimension)
     metrics = {}
-    # for metric in METRICS:
-    #     metrics[metric.__name__] = metric(data, int(scenario))
+    for metric in METRICS:
+        metrics[metric.__name__] = metric(data, int(scenario))
     return metrics, data
 
 
@@ -85,21 +85,21 @@ def main():
                 str(scenario), args.dimension
             )
         # Generate some things as the general table
-        # generate_mean_table(
-        #     {s: d["best_solution"] for s, d in all_metrics.items()},
-        #     {s: d["stability"] for s, d in all_metrics.items()},
-        # )
+        generate_mean_table(
+            {s: d["best_solution"] for s, d in all_metrics.items()},
+            {s: d["stability"] for s, d in all_metrics.items()},
+        )
         # Generate the convergence plot
-        # convergence_general_plot(
-        #     data, store_as_pdf=args.pdf, dimension=int(args.dimension)
-        # )
-        # convergence_summary_plot_paper(
-        #     data, store_as_pdf=args.pdf, dimension=int(args.dimension)
-        # )
+        convergence_general_plot(
+            data, store_as_pdf=args.pdf, dimension=int(args.dimension)
+        )
+        convergence_summary_plot_paper(
+            data, store_as_pdf=args.pdf, dimension=int(args.dimension)
+        )
         # Generate the ANOVA results
-        # generate_anova_result(data)
+        generate_anova_result(data)
         # Generate the post-hoc test results
-        # generate_post_hoc_test(data)
+        generate_post_hoc_test(data)
         # Generate the Wilcoxon test results
         generate_wilcoxon_test(data)
     else:
