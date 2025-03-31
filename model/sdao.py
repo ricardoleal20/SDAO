@@ -265,7 +265,7 @@ class SDAO(Algorithm):
         # Along with this, get a global attraction term. This is going to
         # replace the Gradient calculation in the original SDAO model.
         # * Density term
-        density_term = self.__get_diffusion_term(particle, kdtree)
+        density_term = self.__get_diffusion_term(particle, kdtree, diff_coeff)
         # * Global memory term
         global_attraction = self._params["learning_rate"] * (
             self._best_part.best_position - particle.position
@@ -306,7 +306,9 @@ class SDAO(Algorithm):
             improvement = True
         return particle, improvement
 
-    def __get_diffusion_term(self, particle: Particle, kdtree: KDTree) -> np.ndarray:
+    def __get_diffusion_term(
+        self, particle: Particle, kdtree: KDTree, diffusion_coeff: float
+    ) -> np.ndarray:
         """Calculate the diffusion term inspired by the 2nd Fick's Law.
         This term represents the tendency of particles to move from
         high-density areas to low-density areas.
@@ -334,7 +336,7 @@ class SDAO(Algorithm):
         density_gradient /= norm  # Normalize the gradient
 
         # Ensure the gradient is in the right direction by scaling it
-        return density_gradient * self._params["diffusion_coeff"]
+        return density_gradient * diffusion_coeff
 
     def __apply_obl(
         self,
