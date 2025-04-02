@@ -457,4 +457,4 @@ def _calc_global_density(particles: list[Particle]) -> float:
     max_vals = np.max(positions, axis=0)
     volume = np.prod(max_vals - min_vals)  # Compute hypervolume
     # Avoid division by zero
-    return len(particles) / volume if volume > 0 else 1.0
+    return len(particles) / volume if volume > 1 else 1.0

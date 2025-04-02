@@ -297,6 +297,135 @@ def convergence_general_plot(
         plt.close(fig)
 
 
+def exploration_in_algorithm(data: dict[int, dict[str, list[dict]]]) -> None:
+    """Plot the standard deviation per iteration for each function in the data"""
+    colors = (
+        "#1f77b4",
+        "#ff7f0e",
+        "#2ca02c",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#e377c2",
+    )
+    linestyles = ("-", "--", "-.", ":", (0, (5, 2)), (0, (3, 1, 1, 1)), "-")
+
+    legend_position_per_scenario = {
+        0: (0.85, 0.2),
+        1: (0.5, 0.03),
+        2: (0.5, 0.53),
+        3: (0.85, 0.2),
+    }
+    # Get the data ONLY for scenario 1
+    scenario = 1
+    # Iterate over here to create the figure
+    # Get the functions associated with the scenario
+    functions_scenario = functions_due_to_scenario(scenario)
+    num_functions = len(functions_scenario)
+
+    # Configure the grid of subplots (for example, 3 columns)
+    num_cols = 3
+    num_rows = (num_functions + num_cols - 1) // num_cols  # Integer division rounded up
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(17, 5 * num_rows))
+
+    # Ensure we have an array of axes (flatten for easy iteration)
+    if isinstance(axes, np.ndarray):
+        axes = axes.flatten()
+    else:
+        axes = [axes]
+
+    # Iterate over each function defined for the scenario
+    for idx, bench_func in enumerate(functions_scenario):
+        function_name = bench_func["name"]
+        optimal_value = bench_func.get("optimal_value", 0)
+        ax = axes[idx]
+        ax.set_title(
+            function_name
+            if "CEC" not in function_name
+            else function_name.replace("CEC", ""),
+            fontsize=20,
+        )
+        ax.set_xlabel("Iterations")
+        ax.set_ylabel("Absolute Error")
+        ax.set_yscale("log")
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+        # Extract the data corresponding to this scenario
+        data_scenario = data[scenario]
+
+        # Iterate over each algorithm present in the data
+        for i, (algorithm, data_alg) in enumerate(data_scenario.items()):
+            # Filter the executions corresponding to the current function
+            data_func = [d for d in data_alg if d.get("function") == function_name]
+            if not data_func:
+                continue
+
+            # Collect the absolute errors for each iteration
+            errors_per_iter = {}
+            for d in data_func:
+                # If the optimal value comes in the data, you could use it; in this example we use the one obtained from bench_func
+                trajectory = d["trajectory"]
+                for iteration, value in trajectory:
+                    error = abs(value - optimal_value)
+                    errors_per_iter.setdefault(iteration, []).append(error)
+
+            if not errors_per_iter:
+                continue
+
+            # Sort the iterations and calculate the mean and standard deviation
+            iterations = sorted(errors_per_iter.keys())
+            std_curve = [np.std(errors_per_iter[it]) for it in iterations]
+
+            # Optional: smooth the curves using the __smooth_curve function
+            # mean_curve = __smooth_curve(mean_curve)
+            # std_curve = __smooth_curve(std_curve)
+
+            # Plot the curve and the uncertainty area
+            ax.plot(
+                iterations,
+                std_curve,
+                label=algorithm,
+                color=colors[i % len(colors)],
+                linestyle=linestyles[i % len(linestyles)],
+                linewidth=2,
+            )
+
+        # Determine the y-axis limits for the zoomed-in view
+        if function_name == "Rosenbrock":
+            ax.set_ylim(bottom=0, top=1e6)
+        else:
+            ax.set_ylim(bottom=0, top=1e4)
+        ax.set_xlim(left=0, right=300)
+
+        # Remove individual legends
+        ax.legend().remove()
+
+    # Add a single legend outside the plot
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=legend_position_per_scenario[scenario],
+        ncol=1 if scenario not in [1, 2] else 7,
+        fontsize=20 if scenario not in [1, 2] else 16,
+    )
+
+    # Delete empty subplots
+    for j in range(idx + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    # plt.suptitle(
+    #     f"Convergence in Functions of Benchmark for Scenario {scenario}",
+    #     fontsize=16,
+    # )
+    plt.tight_layout()
+    # Store the figure
+    fig.savefig(
+        "diversity_per_iteration.pdf", dpi=300, bbox_inches="tight", format="pdf"
+    )
+
+
 def convergence_summary_plot_paper(
     data: dict[int, dict[str, list[dict]]],
     dimension: int = 50,

@@ -20,6 +20,7 @@ from model.performance_metrics.plotting import (
     plot_general_absolute_error,
     convergence_general_plot,
     convergence_summary_plot_paper,
+    exploration_in_algorithm,
 )
 from model.performance_metrics.tables import (
     generate_mean_table,
@@ -93,6 +94,8 @@ def main():
         convergence_general_plot(
             data, store_as_pdf=args.pdf, dimension=int(args.dimension)
         )
+        # Generate the exploration plot
+        exploration_in_algorithm(data)
         convergence_summary_plot_paper(
             data, store_as_pdf=args.pdf, dimension=int(args.dimension)
         )

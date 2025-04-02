@@ -66,6 +66,10 @@ def statistical_tests(
     anova_tests: list[AnovaResult] = []
     turkeys_test: dict[str, pd.DataFrame] = {}
 
+    # Get the mean error and standard deviation for each function
+    mean_errors = {}
+    std_errors = {}
+
     for function in functions:
         # Get the results for each algorithm
         function_results = {
@@ -74,9 +78,12 @@ def statistical_tests(
         }
         # Now, let's get the values for each algorithm
         values = [
-            np.array([res["best_value"] for res in results])
+            np.array([res["error"] for res in results])
             for results in function_results.values()
         ]
+        # Print the mean error and the standard deviation
+        mean_errors[function] = np.mean(values)
+        std_errors[function] = np.std(values)
         # Based on this, generate the anova test
         anova_tests.append(_anova_test(values, function))
         turkeys_test[function] = _post_hoc_test(function_results, values)
@@ -86,7 +93,7 @@ def statistical_tests(
             print("DATA\n")
             print(
                 {
-                    alg: np.array([res["best_value"] for res in results])
+                    alg: np.array([res["error"] for res in results])
                     for alg, results in function_results.items()
                 }
             )
@@ -124,6 +131,9 @@ def statistical_tests(
                 ).to_latex(index=False)
             )
     # Print the general media of the results... for each function and each algorithm
+    print("\n")
+    print(f"Average error: {np.mean(list(mean_errors.values()))}")
+    print(f"Average Standard deviation: {np.mean(list(std_errors.values()))}")
 
 
 def _anova_test(statistical_values: list[np.ndarray], function: str) -> AnovaResult:
@@ -167,18 +177,18 @@ def _post_hoc_test(
         # A1, A2, Median Difference, p, Significant, lower, upper
         (
             (comp[0], comp[1], comp[2], comp[3], comp[6], comp[4], comp[5])
-            # if comp[0] == "SDAO"
-            # # Move the SDAO to be the first column...
-            # else (
-            #     # A1, A2, Median Difference, p, Significant, lower, upper
-            #     comp[1],
-            #     comp[0],
-            #     -comp[2],
-            #     comp[3],
-            #     comp[6],
-            #     -comp[4],
-            #     -comp[5],
-            # )
+            if comp[0] == "SDAO"
+            # Move the SDAO to be the first column...
+            else (
+                # A1, A2, Median Difference, p, Significant, lower, upper
+                comp[1],
+                comp[0],
+                -comp[2],
+                comp[3],
+                comp[6],
+                -comp[4],
+                -comp[5],
+            )
         )
         for comp in comparisons
         if "SDAO" in comp[0] or "SDAO" in comp[1]
