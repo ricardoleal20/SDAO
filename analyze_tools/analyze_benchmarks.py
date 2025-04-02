@@ -14,16 +14,19 @@ What we need to run this script, is:
         * n_of_particles
         * all
 """
+
 # Built In imports
 import typing as tp
 import json
 from argparse import ArgumentParser
+
 # External imports
 import numpy as np
 
 
 class BenchMark(tp.TypedDict):
     """The benchmark dictionary type."""
+
     function: str  # The function to optimize
     alpha: float  # The alpha value
     gamma: float  # The gamma value
@@ -42,7 +45,7 @@ latex_equivalent = {
     "beta": r"$\beta$",
     "gamma": r"$\gamma$",
     "diff_coeff": r"$D^0$",
-    "single_test": r"SDAO"
+    "single_test": r"SDAO",
 }
 
 # * Define the expected values for each one of the benchmarks
@@ -58,10 +61,10 @@ expected_values = {
 def read_json_file(param: str) -> list[BenchMark]:
     """From the JSON file, we'll try to read the benchmark solution.
     It would also return a formatted dictionary
-    
+
     Args:
         param (str): The name of the benchmark to read.
-    
+
     Returns:
         dict: The benchmark information.
     """
@@ -70,35 +73,41 @@ def read_json_file(param: str) -> list[BenchMark]:
     # Then, generate the dictionary of solutions
     benchmark_data: list[BenchMark] = []
     for solution in data:
-        benchmark_data.append({
-            "function": solution["function"],
-            "alpha": solution["alpha"],
-            "gamma": solution["gamma"],
-            "beta": solution["beta"],
-            "diff_coeff": solution["diff_coeff"],
-            "num_particles": solution["num_particles"],
-            "num_threads": solution["num_threads"],
-            "avg_best_value": np.mean(solution["best_values"]),
-            "avg_iterations": np.mean(solution["iterations"]),
-            "avg_time": np.mean(solution["time_seconds"])
-        })
+        benchmark_data.append(
+            {
+                "function": solution["function"],
+                "alpha": solution["alpha"],
+                "gamma": solution["gamma"],
+                "beta": solution["beta"],
+                "diff_coeff": solution["diff_coeff"],
+                "num_particles": solution["num_particles"],
+                "num_threads": solution["num_threads"],
+                "avg_best_value": np.mean(solution["best_values"]),
+                "avg_iterations": np.mean(solution["iterations"]),
+                "avg_time": np.mean(solution["time_seconds"]),
+            }
+        )
     return benchmark_data
 
 
 def generate_csv_for_table(param: str, data: list[BenchMark]) -> None:
     """Generate the CSV for the data provided
-    
+
     The columns are going to be:
         - Parameter (in LaTex)
         - Each one of the functions
 
-    
+
     """
     # Convert to a CSV the data.
-    csv_content = f"{latex_equivalent[param]}, {','.join(key for key in expected_values)}\n"
+    csv_content = (
+        f"{latex_equivalent[param]}, {','.join(key for key in expected_values)}\n"
+    )
     for value in data:
-        csv_content += f"{value[param]}, {value['avg_best_value']}," +\
-            f" {value['avg_iterations']}, {value['avg_time']}\n"
+        csv_content += (
+            f"{value[param]}, {value['avg_best_value']},"
+            + f" {value['avg_iterations']}, {value['avg_time']}\n"
+        )
     # At the end, write the CSV file
     with open(f"table_data_{param}.csv", "w", encoding="utf-8") as file:
         file.write(csv_content)
@@ -106,7 +115,7 @@ def generate_csv_for_table(param: str, data: list[BenchMark]) -> None:
 
 def generate_latex_table(param: str, data: list[BenchMark]) -> None:
     """Generate the CSV for the data provided
-    
+
     The columns are going to be:
         - Parameter (in LaTex)
         - Each one of the functions
@@ -157,7 +166,7 @@ def generate_latex_table(param: str, data: list[BenchMark]) -> None:
 
 def analyze_benchmark(param: str) -> None:
     """Analyze the benchmark results.
-    
+
     Args:
         param (str): The name of the benchmark to analyze.
     """
@@ -174,8 +183,8 @@ def analyze_single_test(param: str) -> None:
     # Then, generate the latex table
     latex_table: list[str] = [
         r"\begin{tabular}{|c|c|c|c|} \hline",
-        r" & \textbf{Value} & \textbf{Iterations} & \textbf{Time (s)} \\" +
-        r" \hline\hline",
+        r" & \textbf{Value} & \textbf{Iterations} & \textbf{Time (s)} \\"
+        + r" \hline\hline",
     ]
     # Iterate over the data to see the results
     for datum in data:
@@ -198,20 +207,18 @@ if __name__ == "__main__":
     # Define the parser
     parser = ArgumentParser(description="Analyze the benchmarks results")
     parser.add_argument(
-        "-b", "--benchmark", type=str,
-        help="The benchmark to analyze", default="all"
+        "-b", "--benchmark", type=str, help="The benchmark to analyze", default="all"
     )
     # Parde the arguments
     args = parser.parse_args()
 
     # Available options
-    available_options = ["single_test", "alpha", "beta",
-                         "gamma", "diff_coeff", "all"]
+    available_options = ["single_test", "alpha", "beta", "gamma", "diff_coeff", "all"]
 
     if args.benchmark not in available_options + ["single_test"]:
         raise ValueError(
-            "Invalid benchmark. The only available options are:" +
-            "[single_test, alpha, beta, gamma, diff_coeff, single_test, all]"
+            "Invalid benchmark. The only available options are:"
+            + "[single_test, alpha, beta, gamma, diff_coeff, single_test, all]"
         )
     # Then, we'll only check if we have 'all'. If we do, we'll run all the benchmarks
     # iterating over the available options. If not, we'll only run it for the normal

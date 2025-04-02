@@ -25,3 +25,14 @@ Cargo.lock
 *.json
 results/
 *.csv
+
+# Ignore Python files
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignore the .txt, .tex, .pkl, .pdf files
+*.tex
+*.txt
+*.pkl
+*.pdf
