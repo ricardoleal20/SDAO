@@ -29,6 +29,8 @@ from model.soa.shade import SHADEwithILS
 from model.soa.path_relinking import PathRelinking
 from model.soa.amso import AMSO
 from model.soa.tlpso import TLPSO
+from model.soa.sfoa import SFOA
+from model.soa.pade_pet import PaDE_PET
 
 # Define the Cities for the VRP problem
 # 0 => New York, 1 => LA, 2 => Chicago, 3 => Houston, 4 => Phoenix
@@ -282,11 +284,33 @@ if __name__ == "__main__":
         verbose=args.verbose,
     )
 
+    sfoa = SFOA(
+        n_population=50,
+        n_iterations=args.iterations,
+        verbose=args.verbose,
+    )
+
+    pade_pet = PaDE_PET(
+        n_population=50,
+        n_iterations=args.iterations,
+        verbose=args.verbose,
+    )
+
     # Define which algorithms you'll run
     algorithms: list[Algorithm] = []
     match args.algorithm:
         case "all":
-            algorithms = [sdao, sfs, sgd, shade, path_relinking, amso, tlpso]
+            algorithms = [
+                sdao,
+                sfs,
+                sgd,
+                shade,
+                path_relinking,
+                amso,
+                tlpso,
+                sfoa,
+                pade_pet,
+            ]
         case "sdao":
             algorithms = [sdao]
         case "sfs":
@@ -301,6 +325,10 @@ if __name__ == "__main__":
             algorithms = [amso]
         case "tlpso":
             algorithms = [tlpso]
+        case "sfoa":
+            algorithms = [sdao, sfoa]
+        case "pade_pet":
+            algorithms = [sdao, pade_pet]
         case _:
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 
