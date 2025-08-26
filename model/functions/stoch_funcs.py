@@ -100,7 +100,7 @@ def stochastic_schwefel_function(x: np.ndarray) -> float:
     noise = random.uniform(-1, 1)
 
     d = len(x)
-    return 418.9829 * d - np.sum(x * np.sin(np.sqrt(np.abs(x)))) + noise
+    return float(418.9829 * d - np.sum(x * np.sin(np.sqrt(np.abs(x)))) + noise)
 
 
 def stochastic_drop_wave_function(x: np.ndarray) -> float:
@@ -180,10 +180,20 @@ def stochastic_weierstrass_function(x: np.ndarray) -> float:
     a = 0.5
     b = 3.0
     d = len(x)
-    sum1 = sum(
-        a**k * np.cos(2 * math.pi * b**k * (xi + 0.5)) for xi in x for k in range(21)
-    )
-    sum2 = sum(a**k * np.cos(math.pi * b**k) for k in range(21))
+
+    # Pre-calculate the powers of a and b
+    k_values = np.arange(21)
+    a_powers = a**k_values  # [a^0, a^1, a^2, ..., a^20]
+    b_powers = b**k_values  # [b^0, b^1, b^2, ..., b^20]
+    # Calculate sum1 using vectorized operations
+    # For each xi, calculate all the cos terms simultaneously
+    x_expanded = x[:, np.newaxis] + 0.5  # Shape: (d, 1)
+    cos_args = 2 * math.pi * b_powers * x_expanded  # Broadcasting: (d, 21)
+    cos_values = np.cos(cos_args)  # Shape: (d, 21)
+    sum1 = float(np.sum(a_powers * cos_values))
+
+    # Calculate sum2 (precalculated, only once)
+    sum2 = float(np.sum(a_powers * np.cos(math.pi * b_powers)))
 
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
