@@ -6,6 +6,9 @@ from argparse import ArgumentParser
 import warnings
 import pickle
 from functools import partial
+import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 import matplotlib.pyplot as plt  # pylint: disable=E0401
 import pydash as _py
 import pandas as pd
@@ -21,7 +24,6 @@ from model.solver import Solver, ExperimentFunction, BenchmarkResult
 from model.utils import statistical_tests
 
 # Model imports
-from model.soa.template import Algorithm
 from model.sdao import SDAO
 from model.soa.fractal import StochasticFractalSearch
 from model.soa.algebraic_sgd import AlgebraicSGD
@@ -31,6 +33,11 @@ from model.soa.amso import AMSO
 from model.soa.tlpso import TLPSO
 from model.soa.sfoa import SFOA
 from model.soa.pade_pet import PaDE_PET
+from model.parallel_runner import (
+    set_thread_env as pr_set_thread_env,
+    create_algorithm as pr_create_algorithm,
+    run_algorithm_job as pr_run_algorithm_job,
+)
 
 # Define the Cities for the VRP problem
 # 0 => New York, 1 => LA, 2 => Chicago, 3 => Houston, 4 => Phoenix
@@ -189,6 +196,8 @@ def functions_due_to_scenario(scenario: int) -> list[ExperimentFunction]:
         case _:
             raise NotImplementedError(f"Invalid scenario. Scenario: {scenario}")
 
+    # helpers moved to model.parallel_runner
+
 
 if __name__ == "__main__":
     # Parse the arguments
@@ -225,6 +234,23 @@ if __name__ == "__main__":
         type=str,
         default=True,
         help="Store the results in a LaTex friendly way.",
+    )
+    parser.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Run algorithms in parallel using separate processes.",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=os.cpu_count() or 1,
+        help="Maximum number of parallel worker processes.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=12345,
+        help="Base seed for reproducible parallel runs.",
     )
 
     args = parser.parse_args()
@@ -296,64 +322,100 @@ if __name__ == "__main__":
         verbose=args.verbose,
     )
 
-    # Define which algorithms you'll run
-    algorithms: list[Algorithm] = []
+    # Define which algorithms you'll run (as keys)
+    algorithms_keys: list[str] = []
     match args.algorithm:
         case "all":
-            algorithms = [
-                sdao,
-                sfs,
-                sgd,
-                shade,
-                path_relinking,
-                amso,
-                tlpso,
-                sfoa,
-                pade_pet,
+            algorithms_keys = [
+                "sdao",
+                "sfs",
+                "sgd",
+                "shade",
+                "path_relinking",
+                "amso",
+                "tlpso",
+                "sfoa",
+                "pade_pet",
             ]
         case "sdao":
-            algorithms = [sdao]
+            algorithms_keys = ["sdao"]
         case "sfs":
-            algorithms = [sfs]
+            algorithms_keys = ["sfs"]
         case "sgd":
-            algorithms = [sgd]
+            algorithms_keys = ["sgd"]
         case "shade":
-            algorithms = [shade]
+            algorithms_keys = ["shade"]
         case "path_relinking":
-            algorithms = [path_relinking]
+            algorithms_keys = ["path_relinking"]
         case "amso":
-            algorithms = [amso]
+            algorithms_keys = ["amso"]
         case "tlpso":
-            algorithms = [tlpso]
+            algorithms_keys = ["tlpso"]
         case "sfoa":
-            algorithms = [sdao, sfoa]
+            algorithms_keys = ["sdao", "sfoa"]
         case "pade_pet":
-            algorithms = [sdao, pade_pet]
+            algorithms_keys = ["sdao", "pade_pet"]
         case _:
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 
-    # Instance the algorithm and run them for each scenario
+    # Instance the algorithm(s) and run them for each scenario
     for scenario in scenarios:
-        # Create the solver
-        solver = Solver(
-            num_experiments=args.experiments,
-            functions=functions_due_to_scenario(scenario),
-        )
-        # Run the benchmark
         benchmarks_results: dict[str, list[BenchmarkResult]] = {}
-        for i, alg in enumerate(algorithms, start=1):
-            NAME = alg.__class__.__name__
-            print(
-                f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms)}\033[0m"
+        if args.parallel:
+            pr_set_thread_env()
+            try:
+                mp.set_start_method("spawn", force=True)
+            except RuntimeError:
+                pass
+            base_seed = args.seed
+            seed_seq = np.random.SeedSequence(base_seed)
+            child_seeds = seed_seq.spawn(len(algorithms_keys))
+            max_workers = max(1, int(args.max_workers))
+            with ProcessPoolExecutor(max_workers=max_workers) as ex:
+                print(
+                    f"Running {len(algorithms_keys)} algorithms in parallel with {max_workers} workers..."
+                )
+                print(f"Algorithms: {algorithms_keys}")
+                futures = []
+                for algo_key, ss in zip(algorithms_keys, child_seeds):
+                    seed = int(ss.generate_state(1)[0])
+                    print(f"Submitting {algo_key} with seed {seed}")
+                    futures.append(
+                        ex.submit(
+                            pr_run_algorithm_job,
+                            scenario,
+                            algo_key,
+                            args.iterations,
+                            args.dimension,
+                            args.experiments,
+                            args.verbose,
+                            seed,
+                        )
+                    )
+                print(f"Submitted {len(futures)} jobs, waiting for completion...")
+                for i, fut in enumerate(as_completed(futures), 1):
+                    name, results = fut.result()
+                    benchmarks_results[name] = results
+                    print(f"✓ Completed {name} ({i}/{len(futures)})")
+        else:
+            solver = Solver(
+                num_experiments=args.experiments,
+                functions=functions_due_to_scenario(scenario),
             )
-            print(32 * "=")
-            results = solver.benchmark(
-                dimension=args.dimension, model=alg.optimize, trajectory=alg.trajectory
-            )
-            # Print the results
-            benchmarks_results[NAME] = results
-            # New line
-            print("\n")
+            for i, algo_key in enumerate(algorithms_keys, start=1):
+                alg = pr_create_algorithm(algo_key, args.iterations, args.verbose)
+                NAME = alg.__class__.__name__
+                print(
+                    f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms_keys)}\033[0m"
+                )
+                print(32 * "=")
+                results = solver.benchmark(
+                    dimension=args.dimension,
+                    model=alg.optimize,
+                    trajectory=alg.trajectory,
+                )
+                benchmarks_results[NAME] = results
+                print("\n")
 
         # Store the results for this scenario
         with open(f"scenario_{scenario}_d_{args.dimension}.pkl", "wb") as f:
