@@ -112,9 +112,7 @@ class SDAO(Algorithm):
         # Initialize the iterations list
         self._iterations = []
         # Get the lambda parameter for the adaptive learning rate
-        lambda_learning_rate = (
-            np.log(0.1 * self._params["learning_rate"]) / self._n_iter
-        )
+        lambda_learning_rate = np.log(10) / self._n_iter
         og_memory_coeff = self._params["memory_coeff"]
         og_learning_rate = self._params["learning_rate"]
         # Save original bounds for later contraction
