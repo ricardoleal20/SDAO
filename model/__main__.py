@@ -19,6 +19,7 @@ from model.functions.bench_funcs import bench_funcs
 from model.functions.stoch_funcs import stoch_funcs
 from model.functions.real_life_funcs import real_life_funcs
 from model.functions.cec_funcs import cec_funcs
+from model.functions.soco_funcs import soco_funcs
 from model.functions.mpb_funcs import mpb_benchmarks
 from model.solver import Solver, ExperimentFunction, BenchmarkResult
 from model.utils import statistical_tests
@@ -33,6 +34,8 @@ from model.soa.amso import AMSO
 from model.soa.tlpso import TLPSO
 from model.soa.sfoa import SFOA
 from model.soa.pade_pet import PaDE_PET
+from model.soa.fishing_cat import FCO
+from model.soa.gfa import GFA
 from model.parallel_runner import (
     set_thread_env as pr_set_thread_env,
     create_algorithm as pr_create_algorithm,
@@ -193,6 +196,13 @@ def functions_due_to_scenario(scenario: int) -> list[ExperimentFunction]:
                 + "Each example has his own dimension set for the demo.\033[0m"
             )
             return mpb_benchmarks
+        case 5:
+            print("Using Scenario 5: SOCO benchmark functions.")
+            warnings.warn(
+                "\033[93mThe dimension is going to be ignored for this scenario. "
+                + "Each example has his own dimension set for the demo.\033[0m"
+            )
+            return soco_funcs
         case _:
             raise NotImplementedError(f"Invalid scenario. Scenario: {scenario}")
 
@@ -322,6 +332,18 @@ if __name__ == "__main__":
         verbose=args.verbose,
     )
 
+    fco = FCO(
+        n_population=50,
+        n_iterations=args.iterations,
+        verbose=args.verbose,
+    )
+
+    gfa = GFA(
+        n_fireworks=50,
+        n_iterations=args.iterations,
+        verbose=args.verbose,
+    )
+
     # Define which algorithms you'll run (as keys)
     algorithms_keys: list[str] = []
     match args.algorithm:
@@ -336,6 +358,8 @@ if __name__ == "__main__":
                 "tlpso",
                 "sfoa",
                 "pade_pet",
+                "fco",
+                "gfa",
             ]
         case "sdao":
             algorithms_keys = ["sdao"]
@@ -352,9 +376,13 @@ if __name__ == "__main__":
         case "tlpso":
             algorithms_keys = ["tlpso"]
         case "sfoa":
-            algorithms_keys = ["sdao", "sfoa"]
+            algorithms_keys = ["sfoa"]
         case "pade_pet":
-            algorithms_keys = ["sdao", "pade_pet"]
+            algorithms_keys = ["pade_pet"]
+        case "fco":
+            algorithms_keys = ["fco"]
+        case "gfa":
+            algorithms_keys = ["gfa"]
         case _:
             raise ValueError(f"Invalid algorithm: {args.algorithm}")
 

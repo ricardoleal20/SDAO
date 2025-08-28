@@ -29,6 +29,8 @@ from model.soa.amso import AMSO
 from model.soa.tlpso import TLPSO
 from model.soa.sfoa import SFOA
 from model.soa.pade_pet import PaDE_PET
+from model.soa.fishing_cat import FCO
+from model.soa.gfa import GFA
 
 
 # Define the Cities for the VRP problem (duplicated here for worker isolation)
@@ -152,6 +154,10 @@ def create_algorithm(key: str, iterations: int, verbose: bool) -> Algorithm:
             return SFOA(n_population=50, n_iterations=iterations, verbose=verbose)
         case "pade_pet":
             return PaDE_PET(n_population=50, n_iterations=iterations, verbose=verbose)
+        case "fco":
+            return FCO(n_population=50, n_iterations=iterations, verbose=verbose)
+        case "gfa":
+            return GFA(n_fireworks=50, n_iterations=iterations, verbose=verbose)
         case _:
             raise ValueError(f"Invalid algorithm key: {key}")
 

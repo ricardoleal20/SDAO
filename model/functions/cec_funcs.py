@@ -22,7 +22,7 @@ def cec_shifted_sphere_function(x: np.ndarray) -> float:
     """
     shift = np.full_like(x, 0.5)  # constant shift vector
     z = x - shift
-    return np.sum(z**2)
+    return float(np.sum(z**2))
 
 
 def cec_shifted_rosenbrock_function(x: np.ndarray) -> float:
@@ -39,7 +39,7 @@ def cec_shifted_rosenbrock_function(x: np.ndarray) -> float:
     """
     shift = np.full_like(x, 0.5)
     z = x - shift + 1.0
-    return np.sum(100.0 * (z[1:] - z[:-1] ** 2) ** 2 + (z[:-1] - 1) ** 2)  # type: ignore
+    return float(np.sum(100.0 * (z[1:] - z[:-1] ** 2) ** 2 + (z[:-1] - 1) ** 2))  # type: ignore
 
 
 def cec_shifted_rastrigin_function(x: np.ndarray) -> float:
@@ -56,7 +56,7 @@ def cec_shifted_rastrigin_function(x: np.ndarray) -> float:
     shift = np.full_like(x, 0.5)
     z = x - shift
     n = x.shape[0]
-    return 10 * n + np.sum(z**2 - 10 * np.cos(2 * np.pi * z))
+    return float(10 * n + np.sum(z**2 - 10 * np.cos(2 * np.pi * z)))
 
 
 def cec_shifted_schwefel_function(x: np.ndarray) -> float:
@@ -73,7 +73,7 @@ def cec_shifted_schwefel_function(x: np.ndarray) -> float:
     shift = np.full_like(x, 420.968746)
     z = x - shift
     n = x.shape[0]
-    return 418.9829 * n - np.sum(z * np.sin(np.sqrt(np.abs(z))))
+    return float(418.9829 * n - np.sum(z * np.sin(np.sqrt(np.abs(z)))))
 
 
 def cec_shifted_griewank_function(x: np.ndarray) -> float:
@@ -92,7 +92,7 @@ def cec_shifted_griewank_function(x: np.ndarray) -> float:
     z = x - shift
     sum_term = np.sum(z**2) / 4000.0
     prod_term = np.prod(np.cos(z / np.sqrt(np.arange(1, x.shape[0] + 1))))
-    return sum_term - prod_term + 1
+    return float(sum_term - prod_term + 1)
 
 
 def cec_shifted_ackley_function(x: np.ndarray) -> float:
@@ -112,7 +112,44 @@ def cec_shifted_ackley_function(x: np.ndarray) -> float:
     n = x.shape[0]
     term1 = -20 * np.exp(-0.2 * np.sqrt(np.sum(z**2) / n))
     term2 = -np.exp(np.sum(np.cos(2 * np.pi * z)) / n)
-    return term1 + term2 + 20 + np.e
+    return float(term1 + term2 + 20 + np.e)
+
+
+def cec_shifted_sum_of_different_powers_function(x: np.ndarray) -> float:
+    """Shifted Sum of Different Powers Function (CEC F2 variant without rotation).
+
+    f(x) = sum_{i=1}^{n} |z_i|^{i+1}, where z = x - shift.
+
+    Args:
+        x (np.ndarray): Input vector.
+
+    Returns:
+        float: Function value.
+    """
+    shift = np.full_like(x, 0.5)
+    z = x - shift
+    indices = np.arange(1, x.shape[0] + 1)
+    return float(np.sum(np.abs(z) ** (indices + 1)))
+
+
+def cec_shifted_zakharov_function(x: np.ndarray) -> float:
+    """Shifted Zakharov Function (CEC F3 variant without rotation).
+
+    f(x) = sum(z_i^2) + (0.5 * sum(i * z_i))^2 + (0.5 * sum(i * z_i))^4,
+    where z = x - shift.
+
+    Args:
+        x (np.ndarray): Input vector.
+
+    Returns:
+        float: Function value.
+    """
+    shift = np.full_like(x, 0.5)
+    z = x - shift
+    n = x.shape[0]
+    s1 = float(np.sum(z**2))
+    weighted_sum = float(np.sum(0.5 * np.arange(1, n + 1) * z))
+    return s1 + weighted_sum**2 + weighted_sum**4
 
 
 def cec_shifted_weierstrass_function(x: np.ndarray) -> float:
@@ -141,7 +178,7 @@ def cec_shifted_weierstrass_function(x: np.ndarray) -> float:
     sum2 = 0.0
     for k in range(k_max + 1):
         sum2 += a**k * np.cos(2 * np.pi * b**k * 0.5)
-    return sum1 - n * sum2
+    return float(sum1 - n * sum2)
 
 
 def cec_shifted_bent_cigar_function(x: np.ndarray) -> float:
@@ -158,7 +195,7 @@ def cec_shifted_bent_cigar_function(x: np.ndarray) -> float:
     """
     shift = np.full_like(x, 0.5)
     z = x - shift
-    return z[0] ** 2 + 1e6 * np.sum(z[1:] ** 2)
+    return float(z[0] ** 2 + 1e6 * np.sum(z[1:] ** 2))
 
 
 def cec_shifted_discus_function(x: np.ndarray) -> float:
@@ -175,7 +212,7 @@ def cec_shifted_discus_function(x: np.ndarray) -> float:
     """
     shift = np.full_like(x, 0.5)
     z = x - shift
-    return 1e6 * z[0] ** 2 + np.sum(z[1:] ** 2)
+    return float(1e6 * z[0] ** 2 + np.sum(z[1:] ** 2))
 
 
 def cec_shifted_elliptic_function(x: np.ndarray) -> float:
@@ -194,7 +231,7 @@ def cec_shifted_elliptic_function(x: np.ndarray) -> float:
     z = x - shift
     n = x.shape[0]
     exponents = np.linspace(0, 1, n)
-    return np.sum(10 ** (6 * exponents) * (z**2))  # type: ignore
+    return float(np.sum(10 ** (6 * exponents) * (z**2)))  # type: ignore
 
 
 # 11. Expanded Scaffer F6 Function (applied to consecutive pairs)
@@ -224,6 +261,57 @@ def cec_expanded_scaffer_f6(x: np.ndarray) -> float:
     return f / (n - 1)
 
 
+def cec_shifted_lunacek_bi_rastrigin_function(x: np.ndarray) -> float:
+    """Shifted Lunacek bi-Rastrigin Function (CEC F7 variant without rotation).
+
+    Using common parameters: mu1=2.5, s = 1 - 1/(2*sqrt(D+20) - 8.2), mu2 = -sqrt((mu1^2-1)/s).
+
+    f(x) = min( sum((z - mu1)^2), D + s * sum((z - mu2)^2) )
+           + 10 * sum(1 - cos(2*pi*(z - mu1)))
+
+    where z = x - shift.
+    """
+    shift = np.full_like(x, 0.5)
+    z = x - shift
+    d = x.shape[0]
+    mu1 = 2.5
+    s = 1.0 - 1.0 / (2.0 * np.sqrt(d + 20.0) - 8.2)
+    mu2 = -np.sqrt((mu1**2 - 1.0) / s)
+    term_quadratic_1 = float(np.sum((z - mu1) ** 2))
+    term_quadratic_2 = float(d + s * np.sum((z - mu2) ** 2))
+    rastrigin_term = float(10.0 * np.sum(1.0 - np.cos(2.0 * np.pi * (z - mu1))))
+    return float(min(term_quadratic_1, term_quadratic_2) + rastrigin_term)
+
+
+def cec_shifted_levy_function(x: np.ndarray) -> float:
+    """Shifted Levy Function (CEC F9 variant without rotation).
+
+    Standard Levy with shift: w_i = 1 + (z_i - 1)/4, z = x - shift.
+
+    f(x) = sin^2(pi*w_1)
+           + sum_{i=1}^{n-1} (w_i - 1)^2 * [1 + 10*sin^2(pi*w_i + 1)]
+           + (w_n - 1)^2 * [1 + sin^2(2*pi*w_n)].
+
+    Args:
+        x (np.ndarray): Input vector.
+
+    Returns:
+        float: Function value.
+    """
+    shift = np.full_like(x, 0.5)
+    z = x - shift
+    w = 1.0 + (z - 1.0) / 4.0
+    term1 = np.sin(np.pi * w[0]) ** 2
+    if x.shape[0] > 1:
+        term2 = np.sum(
+            (w[:-1] - 1.0) ** 2 * (1.0 + 10.0 * (np.sin(np.pi * w[:-1] + 1.0) ** 2))
+        )
+    else:
+        term2 = 0.0
+    term3 = (w[-1] - 1.0) ** 2 * (1.0 + (np.sin(2.0 * np.pi * w[-1]) ** 2))
+    return float(term1 + term2 + term3)
+
+
 def cec_shifted_happy_cat_function(x: np.ndarray) -> float:
     """Shifted Happy Cat Function.
 
@@ -242,7 +330,7 @@ def cec_shifted_happy_cat_function(x: np.ndarray) -> float:
     sum_z2 = np.sum(z**2)
     term1 = np.abs(sum_z2 - n) ** 0.25
     term2 = (0.5 * sum_z2 + np.sum(z)) / n + 0.5
-    return term1 + term2
+    return float(term1 + term2)
 
 
 def cec_shifted_hgbat_function(x: np.ndarray) -> float:
@@ -262,7 +350,7 @@ def cec_shifted_hgbat_function(x: np.ndarray) -> float:
     z = x - shift
     n = x.shape[0]
     sum_z2 = np.sum(z**2)
-    return np.abs(sum_z2 - n) ** 0.5 + (0.5 * sum_z2 + np.sum(z)) / n + 0.5
+    return float(np.abs(sum_z2 - n) ** 0.5 + (0.5 * sum_z2 + np.sum(z)) / n + 0.5)
 
 
 def cec_shifted_non_continuous_rastrigin_function(x: np.ndarray) -> float:
@@ -282,7 +370,7 @@ def cec_shifted_non_continuous_rastrigin_function(x: np.ndarray) -> float:
     z = x - shift
     z_nc = np.where(np.abs(z) > 0.5, np.round(z * 2) / 2.0, z)
     n = x.shape[0]
-    return 10 * n + np.sum(z_nc**2 - 10 * np.cos(2 * np.pi * z_nc))
+    return float(10 * n + np.sum(z_nc**2 - 10 * np.cos(2 * np.pi * z_nc)))
 
 
 def cec_hybrid_composition_function(x: np.ndarray) -> float:
@@ -302,8 +390,290 @@ def cec_hybrid_composition_function(x: np.ndarray) -> float:
     f2 = cec_shifted_rastrigin_function(x)
     f3 = cec_shifted_ackley_function(x)
     w1, w2, w3 = 0.3, 0.3, 0.4  # predefined weights
-    return w1 * f1 + w2 * f2 + w3 * f3
+    return float(w1 * f1 + w2 * f2 + w3 * f3)
 
+
+# ----------------------------
+# Hybrid helper and functions
+# ----------------------------
+def _hybrid_weighted_sum(x: np.ndarray, funcs: list, weights: list[float]) -> float:
+    values = [f(x) for f in funcs]
+    total = float(np.sum(np.array(values) * np.array(weights)))
+    return total
+
+
+def cec_hybrid_1(x: np.ndarray) -> float:
+    """Hybrid Function 1 (N=3): Sphere, Rastrigin, Ackley."""
+    funcs = [
+        cec_shifted_sphere_function,
+        cec_shifted_rastrigin_function,
+        cec_shifted_ackley_function,
+    ]
+    weights = [0.3, 0.3, 0.4]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_2(x: np.ndarray) -> float:
+    """Hybrid Function 2 (N=3): Rosenbrock, Griewank, Schwefel."""
+    funcs = [
+        cec_shifted_rosenbrock_function,
+        cec_shifted_griewank_function,
+        cec_shifted_schwefel_function,
+    ]
+    weights = [0.3, 0.3, 0.4]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_3(x: np.ndarray) -> float:
+    """Hybrid Function 3 (N=3): Bent Cigar, Discus, Elliptic."""
+    funcs = [
+        cec_shifted_bent_cigar_function,
+        cec_shifted_discus_function,
+        cec_shifted_elliptic_function,
+    ]
+    weights = [0.34, 0.33, 0.33]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_4(x: np.ndarray) -> float:
+    """Hybrid Function 4 (N=4): Sphere, Rosenbrock, Rastrigin, Ackley."""
+    funcs = [
+        cec_shifted_sphere_function,
+        cec_shifted_rosenbrock_function,
+        cec_shifted_rastrigin_function,
+        cec_shifted_ackley_function,
+    ]
+    weights = [0.25, 0.25, 0.25, 0.25]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_5(x: np.ndarray) -> float:
+    """Hybrid Function 5 (N=4): Griewank, Schwefel, Happy Cat, HGBat."""
+    funcs = [
+        cec_shifted_griewank_function,
+        cec_shifted_schwefel_function,
+        cec_shifted_happy_cat_function,
+        cec_shifted_hgbat_function,
+    ]
+    weights = [0.25, 0.25, 0.25, 0.25]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_6(x: np.ndarray) -> float:
+    """Hybrid Function 6 (N=4): Weierstrass, Non-Continuous Rastrigin, Expanded Scaffer F6, Levy."""
+    funcs = [
+        cec_shifted_weierstrass_function,
+        cec_shifted_non_continuous_rastrigin_function,
+        cec_expanded_scaffer_f6,
+        cec_shifted_levy_function,
+    ]
+    weights = [0.25, 0.25, 0.25, 0.25]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_7(x: np.ndarray) -> float:
+    """Hybrid Function 7 (N=5): Sphere, Zakharov, Rosenbrock, Rastrigin, Ackley."""
+    funcs = [
+        cec_shifted_sphere_function,
+        cec_shifted_zakharov_function,
+        cec_shifted_rosenbrock_function,
+        cec_shifted_rastrigin_function,
+        cec_shifted_ackley_function,
+    ]
+    weights = [0.2, 0.2, 0.2, 0.2, 0.2]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_8(x: np.ndarray) -> float:
+    """Hybrid Function 8 (N=5): Griewank, Schwefel, Levy, Weierstrass, Expanded Scaffer F6."""
+    funcs = [
+        cec_shifted_griewank_function,
+        cec_shifted_schwefel_function,
+        cec_shifted_levy_function,
+        cec_shifted_weierstrass_function,
+        cec_expanded_scaffer_f6,
+    ]
+    weights = [0.2, 0.2, 0.2, 0.2, 0.2]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_9(x: np.ndarray) -> float:
+    """Hybrid Function 9 (N=5): Bent Cigar, Discus, Elliptic, Happy Cat, HGBat."""
+    funcs = [
+        cec_shifted_bent_cigar_function,
+        cec_shifted_discus_function,
+        cec_shifted_elliptic_function,
+        cec_shifted_happy_cat_function,
+        cec_shifted_hgbat_function,
+    ]
+    weights = [0.2, 0.2, 0.2, 0.2, 0.2]
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+def cec_hybrid_10(x: np.ndarray) -> float:
+    """Hybrid Function 10 (N=6): Sphere, Zakharov, Rosenbrock, Rastrigin, Schwefel, Ackley."""
+    funcs = [
+        cec_shifted_sphere_function,
+        cec_shifted_zakharov_function,
+        cec_shifted_rosenbrock_function,
+        cec_shifted_rastrigin_function,
+        cec_shifted_schwefel_function,
+        cec_shifted_ackley_function,
+    ]
+    weights = [1 / 6.0] * 6
+    return _hybrid_weighted_sum(x, funcs, weights)
+
+
+# ---------------------------------
+# Composition helper and functions
+# ---------------------------------
+def _composition_weighted_sum(
+    x: np.ndarray,
+    funcs: list,
+    biases: list[float],
+    sigmas: list[float],
+) -> float:
+    z = x - 0.5
+    d2 = float(np.sum(z**2))
+    ws = np.array([np.exp(-d2 / (2.0 * (s**2))) for s in sigmas])
+    if float(np.sum(ws)) == 0.0:
+        ws = np.ones_like(ws)
+    ws = ws / float(np.sum(ws))
+    vals = np.array([f(x) for f in funcs], dtype=float)
+    total = float(np.sum(ws * (vals + np.array(biases, dtype=float))))
+    return total
+
+
+def cec_composition_1(x: np.ndarray) -> float:
+    """Composition Function 1 (N=3)."""
+    funcs = [
+        cec_shifted_sphere_function,
+        cec_shifted_rastrigin_function,
+        cec_shifted_ackley_function,
+    ]
+    biases = [0.0, 100.0, 200.0]
+    sigmas = [10.0, 20.0, 30.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_2(x: np.ndarray) -> float:
+    """Composition Function 2 (N=3)."""
+    funcs = [
+        cec_shifted_rosenbrock_function,
+        cec_shifted_griewank_function,
+        cec_shifted_schwefel_function,
+    ]
+    biases = [0.0, 100.0, 200.0]
+    sigmas = [10.0, 15.0, 20.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_3(x: np.ndarray) -> float:
+    """Composition Function 3 (N=4)."""
+    funcs = [
+        cec_shifted_bent_cigar_function,
+        cec_shifted_discus_function,
+        cec_shifted_elliptic_function,
+        cec_shifted_weierstrass_function,
+    ]
+    biases = [0.0, 100.0, 200.0, 300.0]
+    sigmas = [10.0, 15.0, 20.0, 25.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_4(x: np.ndarray) -> float:
+    """Composition Function 4 (N=4)."""
+    funcs = [
+        cec_shifted_sphere_function,
+        cec_shifted_rosenbrock_function,
+        cec_shifted_rastrigin_function,
+        cec_shifted_ackley_function,
+    ]
+    biases = [0.0, 100.0, 200.0, 300.0]
+    sigmas = [5.0, 10.0, 15.0, 20.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_5(x: np.ndarray) -> float:
+    """Composition Function 5 (N=5)."""
+    funcs = [
+        cec_shifted_griewank_function,
+        cec_shifted_schwefel_function,
+        cec_shifted_levy_function,
+        cec_shifted_weierstrass_function,
+        cec_expanded_scaffer_f6,
+    ]
+    biases = [0.0, 100.0, 200.0, 300.0, 400.0]
+    sigmas = [10.0, 10.0, 15.0, 20.0, 25.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_6(x: np.ndarray) -> float:
+    """Composition Function 6 (N=5)."""
+    funcs = [
+        cec_shifted_bent_cigar_function,
+        cec_shifted_discus_function,
+        cec_shifted_elliptic_function,
+        cec_shifted_happy_cat_function,
+        cec_shifted_hgbat_function,
+    ]
+    biases = [0.0, 100.0, 200.0, 300.0, 400.0]
+    sigmas = [5.0, 10.0, 15.0, 10.0, 10.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_7(x: np.ndarray) -> float:
+    """Composition Function 7 (N=6)."""
+    funcs = [
+        cec_shifted_sphere_function,
+        cec_shifted_zakharov_function,
+        cec_shifted_rosenbrock_function,
+        cec_shifted_rastrigin_function,
+        cec_shifted_schwefel_function,
+        cec_shifted_ackley_function,
+    ]
+    biases = [0.0, 100.0, 200.0, 300.0, 400.0, 500.0]
+    sigmas = [5.0, 7.5, 10.0, 12.5, 15.0, 17.5]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_8(x: np.ndarray) -> float:
+    """Composition Function 8 (N=6)."""
+    funcs = [
+        cec_shifted_griewank_function,
+        cec_shifted_schwefel_function,
+        cec_shifted_levy_function,
+        cec_shifted_weierstrass_function,
+        cec_expanded_scaffer_f6,
+        cec_shifted_non_continuous_rastrigin_function,
+    ]
+    biases = [0.0, 100.0, 200.0, 300.0, 400.0, 500.0]
+    sigmas = [7.0, 9.0, 11.0, 13.0, 15.0, 17.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_9(x: np.ndarray) -> float:
+    """Composition Function 9 (N=3)."""
+    funcs = [
+        cec_shifted_bent_cigar_function,
+        cec_shifted_discus_function,
+        cec_shifted_elliptic_function,
+    ]
+    biases = [0.0, 100.0, 200.0]
+    sigmas = [5.0, 10.0, 15.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
+
+
+def cec_composition_10(x: np.ndarray) -> float:
+    """Composition Function 10 (N=3)."""
+    funcs = [
+        cec_shifted_happy_cat_function,
+        cec_shifted_hgbat_function,
+        cec_shifted_rastrigin_function,
+    ]
+    biases = [0.0, 100.0, 200.0]
+    sigmas = [5.0, 10.0, 15.0]
+    return _composition_weighted_sum(x, funcs, biases, sigmas)
 
 # List of CEC benchmark functions
 cec_funcs: list["ExperimentFunction"] = [
@@ -317,6 +687,20 @@ cec_funcs: list["ExperimentFunction"] = [
         "optimal_x_value": [0.5],
     },
     {
+        "name": "CEC Shifted Sum of Different Powers",
+        "call": cec_shifted_sum_of_different_powers_function,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Shifted Zakharov",
+        "call": cec_shifted_zakharov_function,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
         "name": "CEC Shifted Rosenbrock",
         "call": cec_shifted_rosenbrock_function,
         "domain": (-30, 30),
@@ -327,6 +711,13 @@ cec_funcs: list["ExperimentFunction"] = [
         "optimal_x_value": [0.5],
     },
     {
+        "name": "CEC Shifted Levy",
+        "call": cec_shifted_levy_function,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [1.5],
+    },
+    {
         "name": "CEC Shifted Rastrigin",
         "call": cec_shifted_rastrigin_function,
         "domain": (-5.12, 5.12),
@@ -334,6 +725,146 @@ cec_funcs: list["ExperimentFunction"] = [
         # With f(x) = 10·d + Σ[(xᵢ – 0.5)² – 10 cos(2π(xᵢ – 0.5))]
         # the best value is reached when (xᵢ – 0.5) = 0
         # (so that cos(0)=1), yielding 10·d – 10·d = 0
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 1 (N=3)",
+        "call": cec_hybrid_1,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 2 (N=3)",
+        "call": cec_hybrid_2,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 3 (N=3)",
+        "call": cec_hybrid_3,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 4 (N=4)",
+        "call": cec_hybrid_4,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 5 (N=4)",
+        "call": cec_hybrid_5,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 6 (N=4)",
+        "call": cec_hybrid_6,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 7 (N=5)",
+        "call": cec_hybrid_7,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 8 (N=5)",
+        "call": cec_hybrid_8,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 9 (N=5)",
+        "call": cec_hybrid_9,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Hybrid Function 10 (N=6)",
+        "call": cec_hybrid_10,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 1 (N=3)",
+        "call": cec_composition_1,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 2 (N=3)",
+        "call": cec_composition_2,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 3 (N=4)",
+        "call": cec_composition_3,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 4 (N=4)",
+        "call": cec_composition_4,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 5 (N=5)",
+        "call": cec_composition_5,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 6 (N=5)",
+        "call": cec_composition_6,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 7 (N=6)",
+        "call": cec_composition_7,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 8 (N=6)",
+        "call": cec_composition_8,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 9 (N=3)",
+        "call": cec_composition_9,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Composition Function 10 (N=3)",
+        "call": cec_composition_10,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
         "optimal_x_value": [0.5],
     },
     {
@@ -357,6 +888,13 @@ cec_funcs: list["ExperimentFunction"] = [
         # Since f(x) = (Σ (xᵢ – 0.5)²)/4000 – ∏ cos((xᵢ – 0.5)/√(i)) + 1,
         # setting x = 0.5 makes the squared term zero and each cosine
         # becomes cos(0)=1. Hence f = 0 – 1 + 1 = 0
+        "optimal_x_value": [0.5],
+    },
+    {
+        "name": "CEC Shifted Lunacek bi-Rastrigin",
+        "call": cec_shifted_lunacek_bi_rastrigin_function,
+        "domain": (-100, 100),
+        "optimal_value": 0.0,
         "optimal_x_value": [0.5],
     },
     {
