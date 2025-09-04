@@ -306,11 +306,24 @@ def convergence_general_plot(
                 fontsize=20,
             )
         else:
+            # Specific adjustment for SCENARIO 1: anchor the bottom of the legend
+            # slightly above the bottom border to avoid cuts.
+            legend_loc = (
+                "lower center" if scenario == 1 else "upper center"
+            )
+            # For SCENARIO 2 move the legend outside, in the top,
+            # to avoid covering the central function titles. This is manually done by now, probably
+            # I can automate it later for all the scenarios...
+            legend_anchor = (
+                (0.5, 0.06)
+                if scenario == 1
+                else ((0.5, 1.02) if scenario == 2 else legend_position_per_scenario[scenario])
+            )
             fig.legend(
                 handles,
                 labels,
-                loc="upper center",
-                bbox_to_anchor=legend_position_per_scenario[scenario],
+                loc=legend_loc,
+                bbox_to_anchor=legend_anchor,
                 ncol=1 if scenario not in [1, 2] else 7,
                 fontsize=20 if scenario not in [1, 2] else 16,
             )
@@ -324,13 +337,20 @@ def convergence_general_plot(
         #     fontsize=16,
         # )
         plt.tight_layout()
+        # For different scenarios, we need to adjust the margins
+        if scenario == 1:
+            # Reduce the bottom margin to bring the legend closer to the subplots
+            plt.subplots_adjust(bottom=0.15)
+        elif scenario == 2:
+            # Leave extra space above for the external legend
+            plt.subplots_adjust(top=0.88)
         # Add extra vertical spacing between rows for scenario 2
         if scenario == 2:
             plt.subplots_adjust(hspace=0.6)
 
         # Store the PDF file for the current scenario
         pdf_filename = f"convergence_plot_scenario_{scenario}_d{dimension}.pdf"
-        plt.savefig(pdf_filename, format="pdf", dpi=300)
+        plt.savefig(pdf_filename, format="pdf", dpi=300, bbox_inches="tight", pad_inches=0.1)
         plt.close(fig)
 
 
