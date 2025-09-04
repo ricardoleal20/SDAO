@@ -5,7 +5,6 @@ Define different metric plots, such as the
 from typing import Sequence
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 # Local imports
 from model.__main__ import functions_due_to_scenario
@@ -22,6 +21,42 @@ plt.rcParams["ytick.labelsize"] = 36  # Size of labels on y-axis
 plt.rcParams["legend.fontsize"] = 16  # Size of legend
 
 
+# Unified color palette and line styles across all plots
+COLORS = (
+    "#1f77b4",  # blue
+    "#ff7f0e",  # orange
+    "#2ca02c",  # green
+    "#d62728",  # red
+    "#9467bd",  # purple
+    "#8c564b",  # brown
+    "#e377c2",  # pink
+    "#7f7f7f",  # gray
+    "#bcbd22",  # olive
+    "#17becf",  # cyan
+    "#aec7e8",  # light blue
+)
+LINESTYLES = (
+    "-",
+    "--",
+    "-.",
+    ":",
+    (0, (5, 2)),
+    (0, (3, 1, 1, 1)),
+    "-",
+)
+
+
+def _order_algorithms(algorithms: Sequence[str]) -> list[str]:
+    """Return algorithms with 'SDAO' first, followed by others alphabetically."""
+    others = sorted([a for a in algorithms if a != "SDAO"])
+    return (["SDAO"] if "SDAO" in algorithms else []) + others
+
+
+def _display_name(algorithm: str) -> str:
+    """Map internal algorithm names to display labels (e.g., abbreviations)."""
+    return "SFS" if algorithm == "StochasticFractalSearch" else algorithm
+
+
 def __smooth_curve(curve: Sequence[float], window=5) -> np.ndarray:
     """Smooth the curve using a moving average"""
     return np.convolve(curve, np.ones(window) / window, mode="same")
@@ -36,15 +71,13 @@ def plot_absolute_error(
     the average error for each algorith and each function,
     along with their standard deviation as a parameter (to simulate a Box Plot)
     """
-    # First of all, get all the algorithms
-    algorithms = list(average_error.keys())
+    # First of all, get all the algorithms, SDAO first
+    algorithms = _order_algorithms(list(average_error.keys()))
     # Get also all the functions. For that, only get the keys for SDAO.
     # Since the functions should be all the same
     functions = list(average_error["SDAO"].keys())
-    # Create the Plot and defien the colors using sns
+    # Create the Plot and defien the colors using unified palette
     fig, ax = plt.subplots(figsize=(30, 12))
-    # Define color palette (ColorBlind Friendly)
-    colors = sns.color_palette("Greys", len(algorithms))
     x = np.arange(len(functions))  # Position of each group
     width = 0.50  # Width of each bar
     # Iterate over the algorithms to create a bar plot for each function
@@ -55,11 +88,11 @@ def plot_absolute_error(
             # Get the average error for each function
             [average_error[algorithms[i]][func] for func in functions],
             width,
-            label=algorithms[i],
+            label=_display_name(algorithms[i]),
             yerr=[standard_deviation[algorithms[i]][func] for func in functions],
             capsize=3,
             alpha=0.9,
-            color=colors[i],  # Custom color for each algorithm
+            color=COLORS[i % len(COLORS)],
             edgecolor="black",  # Edge color to improve contrast
         )
     # Add some style to the plot
@@ -103,30 +136,28 @@ def plot_general_absolute_error(
         standard_deviation: The standard deviation for each algorithm.
         store_as_pdf: Whether to store the plot as a PDF file.
     """
-    # First of all, get all the algorithms
-    algorithms = []
-    for algorithm in average_error.keys():
-        if algorithm != "StochasticFractalSearch":
-            algorithms.append(algorithm)
-        else:
-            algorithms.append("SFS")
-    # Get the mean absolute error per algorithm
+    # Order algorithms with SDAO first and map display names
+    algorithms = _order_algorithms(list(average_error.keys()))
+    display_labels = [_display_name(a) for a in algorithms]
+
+    # Compute metrics in that order
     absolute_error_per_algorithm = [
-        np.mean(list(errors.values())) for errors in average_error.values()
+        np.mean(list(average_error[alg].values())) for alg in algorithms
     ]
-    # Get the mean standard deviation per algorithm
     standard_deviation_per_algorithm = [
-        np.mean(list(deviations.values())) for deviations in standard_deviation.values()
+        np.mean(list(standard_deviation[alg].values())) for alg in algorithms
     ]
+
     # Plot the mean absolute error along with the mean standard deviation
     fig, ax = plt.subplots(figsize=(30, 12))
     ax.bar(
-        algorithms,
+        display_labels,
         absolute_error_per_algorithm,
         yerr=standard_deviation_per_algorithm,
         capsize=2,
-        color="black",
-        alpha=0.7,
+        color=[COLORS[i % len(COLORS)] for i in range(len(algorithms))],
+        alpha=0.8,
+        edgecolor="black",
     )
     ax.set_xlabel("Algorithm")
     ax.set_ylabel("Mean Absolute Error")
@@ -158,17 +189,7 @@ def convergence_general_plot(
                   - "trajectory": list of tuples (iteration, value)
                   - (Optional) "optimal_value": optimal value (although it is recommended to obtain it from functions_due_to_scenario)
     """
-    # Define the colors and styles for the plots (you can modify or expand according to the number of algorithms)
-    colors = (
-        "#1f77b4",
-        "#ff7f0e",
-        "#2ca02c",
-        "#d62728",
-        "#9467bd",
-        "#8c564b",
-        "#e377c2",
-    )
-    linestyles = ("-", "--", "-.", ":", (0, (5, 2)), (0, (3, 1, 1, 1)), "-")
+    # Use unified COLORS and LINESTYLES
 
     legend_position_per_scenario = {
         0: (0.85, 0.2),
@@ -218,7 +239,9 @@ def convergence_general_plot(
             data_scenario = data[scenario]
 
             # Iterate over each algorithm present in the data
-            for i, (algorithm, data_alg) in enumerate(data_scenario.items()):
+            ordered_algs = _order_algorithms(list(data_scenario.keys()))
+            for i, algorithm in enumerate(ordered_algs):
+                data_alg = data_scenario[algorithm]
                 # Filter the executions corresponding to the current function
                 data_func = [d for d in data_alg if d.get("function") == function_name]
                 if not data_func:
@@ -249,16 +272,16 @@ def convergence_general_plot(
                 ax.plot(
                     iterations,
                     mean_curve,
-                    label=algorithm,
-                    color=colors[i % len(colors)],
-                    linestyle=linestyles[i % len(linestyles)],
+                    label=_display_name(algorithm),
+                    color=COLORS[i % len(COLORS)],
+                    linestyle=LINESTYLES[i % len(LINESTYLES)],
                     linewidth=2,
                 )
                 ax.fill_between(
                     iterations,
                     np.array(mean_curve) - np.array(std_curve),
                     np.array(mean_curve) + np.array(std_curve),
-                    color=colors[i % len(colors)],
+                    color=COLORS[i % len(COLORS)],
                     alpha=0.15,
                 )
 
@@ -270,16 +293,27 @@ def convergence_general_plot(
             # Remove individual legends
             ax.legend().remove()
 
-        # Add a single legend outside the plot
+        # Add a single legend with scenario-specific positioning
         handles, labels = ax.get_legend_handles_labels()
-        fig.legend(
-            handles,
-            labels,
-            loc="upper center",
-            bbox_to_anchor=legend_position_per_scenario[scenario],
-            ncol=1 if scenario not in [1, 2] else 7,
-            fontsize=20 if scenario not in [1, 2] else 16,
-        )
+        if scenario == 3:
+            # Place legend at the very bottom-right edge
+            fig.legend(
+                handles,
+                labels,
+                loc="lower right",
+                bbox_to_anchor=(0.98, 0.02),
+                ncol=1,
+                fontsize=20,
+            )
+        else:
+            fig.legend(
+                handles,
+                labels,
+                loc="upper center",
+                bbox_to_anchor=legend_position_per_scenario[scenario],
+                ncol=1 if scenario not in [1, 2] else 7,
+                fontsize=20 if scenario not in [1, 2] else 16,
+            )
 
         # Delete empty subplots
         for j in range(idx + 1, len(axes)):
@@ -290,6 +324,9 @@ def convergence_general_plot(
         #     fontsize=16,
         # )
         plt.tight_layout()
+        # Add extra vertical spacing between rows for scenario 2
+        if scenario == 2:
+            plt.subplots_adjust(hspace=0.6)
 
         # Store the PDF file for the current scenario
         pdf_filename = f"convergence_plot_scenario_{scenario}_d{dimension}.pdf"
@@ -299,16 +336,7 @@ def convergence_general_plot(
 
 def exploration_in_algorithm(data: dict[int, dict[str, list[dict]]]) -> None:
     """Plot the standard deviation per iteration for each function in the data"""
-    colors = (
-        "#1f77b4",
-        "#ff7f0e",
-        "#2ca02c",
-        "#d62728",
-        "#9467bd",
-        "#8c564b",
-        "#e377c2",
-    )
-    linestyles = ("-", "--", "-.", ":", (0, (5, 2)), (0, (3, 1, 1, 1)), "-")
+    # Use unified COLORS and LINESTYLES
 
     legend_position_per_scenario = {
         0: (0.85, 0.2),
@@ -321,6 +349,8 @@ def exploration_in_algorithm(data: dict[int, dict[str, list[dict]]]) -> None:
     # Iterate over here to create the figure
     # Get the functions associated with the scenario
     functions_scenario = functions_due_to_scenario(scenario)
+    if scenario != 1:
+        return
     num_functions = len(functions_scenario)
 
     # Configure the grid of subplots (for example, 3 columns)
@@ -354,7 +384,9 @@ def exploration_in_algorithm(data: dict[int, dict[str, list[dict]]]) -> None:
         data_scenario = data[scenario]
 
         # Iterate over each algorithm present in the data
-        for i, (algorithm, data_alg) in enumerate(data_scenario.items()):
+        ordered_algs = _order_algorithms(list(data_scenario.keys()))
+        for i, algorithm in enumerate(ordered_algs):
+            data_alg = data_scenario[algorithm]
             # Filter the executions corresponding to the current function
             data_func = [d for d in data_alg if d.get("function") == function_name]
             if not data_func:
@@ -384,9 +416,9 @@ def exploration_in_algorithm(data: dict[int, dict[str, list[dict]]]) -> None:
             ax.plot(
                 iterations,
                 std_curve,
-                label=algorithm,
-                color=colors[i % len(colors)],
-                linestyle=linestyles[i % len(linestyles)],
+                label=_display_name(algorithm),
+                color=COLORS[i % len(COLORS)],
+                linestyle=LINESTYLES[i % len(LINESTYLES)],
                 linewidth=2,
             )
 
@@ -458,24 +490,7 @@ def convergence_summary_plot_paper(
         "CEC Shifted Rastrigin": (1e-0, 1.25e3),
         "Supply Chain Network Design": (1e-0, 1e4),
     }
-    colors = (
-        "#1f77b4",
-        "#ff7f0e",
-        "#2ca02c",
-        "#d62728",
-        "#9467bd",
-        "#8c564b",
-        "#e377c2",
-    )
-    linestyles = (
-        "-",
-        "--",
-        "-.",
-        ":",
-        (0, (5, 2)),
-        (0, (3, 1, 1, 1)),
-        "-",
-    )
+    # Use unified COLORS and LINESTYLES
 
     for idx, (scenario, func_name) in enumerate(selected.items()):
         ax = axes[idx]
@@ -489,7 +504,9 @@ def convergence_summary_plot_paper(
         ax.set_yscale("log")
         ax.grid(True, linestyle="--", alpha=0.5)
 
-        for i, (algorithm, data_alg) in enumerate(data_scenario.items()):
+        ordered_algs = _order_algorithms(list(data_scenario.keys()))
+        for i, algorithm in enumerate(ordered_algs):
+            data_alg = data_scenario[algorithm]
             # Extract data for the selected function
             runs = [d for d in data_alg if d["function"] == func_name]
             if not runs:
@@ -513,16 +530,16 @@ def convergence_summary_plot_paper(
             ax.plot(
                 iterations,
                 mean_curve,
-                label=algorithm,
-                color=colors[i % len(colors)],
-                linestyle=linestyles[i % len(linestyles)],
+                label=_display_name(algorithm),
+                color=COLORS[i % len(COLORS)],
+                linestyle=LINESTYLES[i % len(LINESTYLES)],
                 linewidth=2,
             )
             ax.fill_between(
                 iterations,
                 np.array(mean_curve) - np.array(std_curve),
                 np.array(mean_curve) + np.array(std_curve),
-                color=colors[i % len(colors)],
+                color=COLORS[i % len(COLORS)],
                 alpha=0.15,
             )
 
