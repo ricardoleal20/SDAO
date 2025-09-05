@@ -206,14 +206,139 @@ def convergence_general_plot(
         if num_functions == 0:
             continue  # If there are no functions for this scenario, skip it
 
-        # Configure the grid of subplots (for example, 3 columns)
+        # For scenario 3 (CEC), split across multiple pages to avoid overly tight subplots
+        if scenario == 3:
+            page_size = 12
+            num_cols = 3
+            for page_start in range(0, num_functions, page_size):
+                sub_funcs = functions_scenario[page_start : page_start + page_size]
+                num_rows = (len(sub_funcs) + num_cols - 1) // num_cols
+                fig, axes = plt.subplots(
+                    num_rows, num_cols, figsize=(17, 4.8 * num_rows)
+                )
+
+                if isinstance(axes, np.ndarray):
+                    axes = axes.flatten()
+                else:
+                    axes = [axes]
+
+                for idx, bench_func in enumerate(sub_funcs):
+                    function_name = bench_func["name"]
+                    optimal_value = bench_func.get("optimal_value", 0)
+                    ax = axes[idx]
+                    ax.set_title(
+                        function_name
+                        if "CEC" not in function_name
+                        else function_name.replace("CEC", ""),
+                        fontsize=20,
+                    )
+                    ax.set_xlabel("Iterations")
+                    ax.set_ylabel("Absolute Error")
+                    ax.set_yscale("log")
+                    ax.grid(True, linestyle="--", alpha=0.5)
+
+                    data_scenario = data[scenario]
+                    ordered_algs = _order_algorithms(list(data_scenario.keys()))
+                    for i, algorithm in enumerate(ordered_algs):
+                        data_alg = data_scenario[algorithm]
+                        data_func = [
+                            d for d in data_alg if d.get("function") == function_name
+                        ]
+                        if not data_func:
+                            continue
+
+                        errors_per_iter = {}
+                        for d in data_func:
+                            trajectory = d["trajectory"]
+                            for iteration, value in trajectory:
+                                error = abs(value - optimal_value)
+                                errors_per_iter.setdefault(iteration, []).append(error)
+
+                        if not errors_per_iter:
+                            continue
+
+                        iterations = sorted(errors_per_iter.keys())
+                        mean_curve = [np.mean(errors_per_iter[it]) for it in iterations]
+                        std_curve = [np.std(errors_per_iter[it]) for it in iterations]
+
+                        ax.plot(
+                            iterations,
+                            mean_curve,
+                            label=_display_name(algorithm),
+                            color=COLORS[i % len(COLORS)],
+                            linestyle=LINESTYLES[i % len(LINESTYLES)],
+                            linewidth=2,
+                        )
+                        ax.fill_between(
+                            iterations,
+                            np.array(mean_curve) - np.array(std_curve),
+                            np.array(mean_curve) + np.array(std_curve),
+                            color=COLORS[i % len(COLORS)],
+                            alpha=0.15,
+                        )
+
+                    if dimension > 25 and function_name != "Xin-She Yang 1":
+                        ax.set_ylim(bottom=1, top=1e10)
+                    ax.set_xlim(left=0, right=300)
+                    ax.legend().remove()
+
+                # Add legend: if the page has fewer subplots than columns (e.g., last page with 2),
+                # use the empty rightmost axis as a dedicated legend panel. Otherwise, place it below.
+                handles, labels = ax.get_legend_handles_labels()
+                if len(sub_funcs) < num_cols:
+                    legend_ax = axes[-1]
+                    legend_ax.axis("off")
+                    legend_ax.legend(
+                        handles,
+                        labels,
+                        loc="center",
+                        ncol=1,
+                        fontsize=14,
+                        frameon=True,
+                    )
+                else:
+                    fig.legend(
+                        handles,
+                        labels,
+                        loc="lower center",
+                        bbox_to_anchor=(0.5, 0.02),
+                        ncol=7,
+                        fontsize=16,
+                    )
+
+                if len(sub_funcs) >= num_cols:
+                    for j in range(idx + 1, len(axes)):
+                        fig.delaxes(axes[j])
+
+                plt.tight_layout()
+                # Leave extra space at the bottom for the legend to avoid overlapping.
+                # If legend goes into a dedicated axis, we can use a smaller bottom margin.
+                if len(sub_funcs) < num_cols:
+                    plt.subplots_adjust(bottom=0.10)
+                else:
+                    if num_rows <= 1:
+                        plt.subplots_adjust(bottom=0.24)
+                    elif num_rows == 2:
+                        plt.subplots_adjust(bottom=0.18)
+                    else:
+                        plt.subplots_adjust(bottom=0.14)
+                pdf_filename = f"convergence_plot_scenario_{scenario}_d{dimension}_p{page_start // page_size + 1}.pdf"
+                plt.savefig(
+                    pdf_filename,
+                    format="pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                    pad_inches=0.1,
+                )
+                plt.close(fig)
+            # Continue to next scenario since pages already saved
+            continue
+
+        # Default behavior for other scenarios: single-page grid
         num_cols = 3
-        num_rows = (
-            num_functions + num_cols - 1
-        ) // num_cols  # Integer division rounded up
+        num_rows = (num_functions + num_cols - 1) // num_cols
         fig, axes = plt.subplots(num_rows, num_cols, figsize=(17, 5 * num_rows))
 
-        # Ensure we have an array of axes (flatten for easy iteration)
         if isinstance(axes, np.ndarray):
             axes = axes.flatten()
         else:
@@ -575,6 +700,7 @@ def convergence_summary_plot_paper(
     #     f"Convergence Curves on Representative Functions (d = {dimension})",
     #     fontsize=16,
     # )
+    plt.subplots_adjust(bottom=0.18)
 
     if store_as_pdf:
         plt.savefig(output_name, dpi=300, bbox_inches="tight", format="pdf")

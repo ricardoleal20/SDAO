@@ -19,6 +19,22 @@ SCENARIO_NAMES = {
 }
 
 
+# Preferred display order for algorithms in generated tables
+ALGORITHM_ORDER = [
+    "SDAO",
+    "StochasticFractalSearch",
+    "AlgebraicSGD",
+    "SHADEwithILS",
+    "PathRelinking",
+    "AMSO",
+    "TLPSO",
+    "SFOA",
+    "FCO",
+    "GFA",
+    "Pade-PET",
+]
+
+
 def __get_valid_data(data: Sequence[float]) -> list[float]:
     """Get the valid data from the array of dict.values()"""
     return [v for v in data if not np.isnan(v) or np.isinf(v) or np.isclose(v, 9e99)]
@@ -71,7 +87,11 @@ def generate_mean_table(
 ) -> None:
     """Generate the mean table of different algorithms"""
     # First of all, get all the algorithms
-    algorithms = list(average_error[0].keys())
+    original_algorithms = list(average_error[0].keys())
+    # Enforce preferred order, while keeping any extra algorithms at the end
+    ordered_present = [a for a in ALGORITHM_ORDER if a in original_algorithms]
+    remaining = [a for a in original_algorithms if a not in ALGORITHM_ORDER]
+    algorithms = ordered_present + remaining
     # Get the scenarios based on the number of keys
     scenarios = average_error.keys()
 
