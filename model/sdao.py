@@ -2,7 +2,7 @@
 Implement the SDAO model in Python.
 """
 
-from typing import TypedDict, Callable, Sequence, Literal
+from typing import TypedDict, Callable, Sequence, Literal, cast
 from dataclasses import dataclass
 import numpy as np
 from scipy.spatial import KDTree
@@ -272,10 +272,9 @@ class SDAO(Algorithm):
         memory_term = self._params["memory_coeff"] * (
             particle.best_position - particle.position
         )
-        # P3: Noisy diffusion term
-        # Calculate the stoch term using a Heavy-tailed distribution
-        stoch_term = np.sqrt(2 * diff_coeff) * np.random.uniform(
-            0, 1, particle.position.shape
+        # P3: Noisy diffusion term (zero-mean heavy-tailed)
+        stoch_term = np.sqrt(2 * diff_coeff) * np.random.laplace(
+            0.0, 1.0, size=particle.position.shape
         )
         # * Update the position of the particle
         new_position = (
@@ -320,6 +319,19 @@ class SDAO(Algorithm):
             for idx in neighbors_idx
             if not np.array_equal(particle.position, kdtree.data[idx])
         ]
+        # Fallback to k-NN if the radius yields no neighbors (robust in high dimensions)
+        if not neighbors_idx:
+            n_points = int(len(getattr(kdtree, "data", [])))
+            k = max(1, min(5, n_points - 1))
+            if k > 0:
+                dists, idxs = kdtree.query(particle.position, k=k + 1)
+                idxs_arr = np.atleast_1d(idxs)
+                dists_arr = np.atleast_1d(dists)
+                neighbors_idx = [
+                    int(idx)
+                    for (idx, dist) in zip(idxs_arr.tolist(), dists_arr.tolist())
+                    if dist > 0
+                ]
         if not neighbors_idx:
             return np.zeros_like(particle.position)
         # Calculate the center of mass of the neighbors
@@ -390,13 +402,16 @@ class SDAO(Algorithm):
         """
         # Create the array for the new bounds...
         new_bounds = []
-        # The bounds are the same for all dimensions, so we modify them as a list
+        # Normalize original bounds into per-dimension list to contract per component
         if isinstance(original_bounds, tuple):
-            bounds = [original_bounds]  # type: ignore
-            was_tuple: bool = True
+            lower, upper = cast(tuple[float, float], original_bounds)
+            bounds: list[tuple[float, float]] = [
+                (lower, upper) for _ in range(len(best_position))
+            ]
         else:
-            bounds: list[tuple[float, float]] = original_bounds  # type: ignore
-            was_tuple = False
+            bounds = [(float(lo), float(hi)) for (lo, hi) in original_bounds]  # type: ignore
+        # Contraction factor is clamped to [0, 1]
+        contraction = float(np.clip(self._params["memory_coeff"], 0.0, 1.0))
         # We iterate over the bounds to update them. We are not going further the original
         # bounds. For example, having a bounds of (-5, 5) we cannot have bounds of (-6, 6)
         # or something else. We are just contracting the bounds INSIDE the original bounds.
@@ -404,12 +419,14 @@ class SDAO(Algorithm):
             # Get the best position for this dimension
             best = best_position[j]
             # Update the new bounds for the lower and upper.
-            new_lower = best - self._params["memory_coeff"] * (best - lower)
-            new_upper = best + self._params["memory_coeff"] * (upper - best)
+            new_lower = best - contraction * (best - lower)
+            new_upper = best + contraction * (upper - best)
+            # Clip within original bounds per dimension
+            new_lower = float(max(lower, new_lower))
+            new_upper = float(min(upper, new_upper))
             # Append the new bounds
             new_bounds.append((new_lower, new_upper))
-        # Depending on the flag, return the bounds as a tuple or as a list
-        return new_bounds[0] if was_tuple else new_bounds
+        return new_bounds
 
 
 # ====================================== #
@@ -423,9 +440,17 @@ def _init_particles(
     bounds: Sequence[tuple[float, float]] | tuple[float, float],
 ) -> list[Particle]:
     """Initialize the particles for the SDAO algorithm."""
+
+    def _sample_position() -> np.ndarray:
+        if isinstance(bounds, tuple):
+            low, high = bounds
+            return np.random.uniform(low, high, size=dimension)  # type: ignore
+        # Per-dimension bounds
+        return np.array([np.random.uniform(lo, hi) for (lo, hi) in bounds], dtype=float)
+
     return [
         Particle(
-            position=np.random.uniform(*bounds, size=dimension),
+            position=_sample_position(),
             value=np.inf,
             best_value=np.inf,
             best_position=np.zeros(dimension),

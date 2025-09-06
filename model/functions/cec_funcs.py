@@ -4,9 +4,63 @@ Include the CEC functions
 
 from typing import TYPE_CHECKING
 import numpy as np
+from functools import lru_cache
 
 if TYPE_CHECKING:
     from model.solver import ExperimentFunction
+
+
+# Constants and cached helpers to avoid repeated allocations
+PI2: float = 2.0 * np.pi
+
+
+@lru_cache(maxsize=None)
+def _inv_sqrt_indices(n: int) -> np.ndarray:
+    """Return 1/sqrt(1..n) as a cached vector.
+
+    The returned array must be treated as read-only by callers.
+    """
+    return 1.0 / np.sqrt(np.arange(1, n + 1, dtype=float))
+
+
+@lru_cache(maxsize=None)
+def _elliptic_weights(n: int) -> np.ndarray:
+    """Weights for the elliptic function: 10 ** (6 * ((i-1)/(n-1)))."""
+    if n == 1:
+        # When n == 1, original implementation behaved like exponent = 0 -> weight = 1.0
+        return np.array([1.0], dtype=float)
+    exponents = np.linspace(0.0, 1.0, n, dtype=float)
+    return np.power(10.0, 6.0 * exponents, dtype=float)
+
+
+@lru_cache(maxsize=None)
+def _zakharov_coeffs(n: int) -> np.ndarray:
+    """Return 0.5 * (1..n) as float for Zakharov's weighted sum."""
+    return 0.5 * np.arange(1, n + 1, dtype=float)
+
+
+@lru_cache(maxsize=None)
+def _arange_1_to_n(n: int) -> np.ndarray:
+    """Return integer array [1, 2, ..., n] (cached)."""
+    return np.arange(1, n + 1, dtype=int)
+
+
+@lru_cache(maxsize=None)
+def _weierstrass_params(k_max: int = 20) -> tuple[np.ndarray, np.ndarray, float]:
+    """Cached powers and constant term for Weierstrass.
+
+    Returns (a_pow, b_pow, sum2_const) where:
+    - a_pow[k] = a**k, a = 0.5
+    - b_pow[k] = b**k, b = 3.0
+    - sum2_const = sum_{k=0}^{k_max} a^k * cos(2*pi*b^k*0.5)
+    """
+    a: float = 0.5
+    b: float = 3.0
+    k = np.arange(0, k_max + 1, dtype=int)
+    a_pow = np.power(a, k, dtype=float)
+    b_pow = np.power(b, k, dtype=float)
+    sum2_const = float(np.sum(a_pow * np.cos(PI2 * b_pow * 0.5)))
+    return a_pow, b_pow, sum2_const
 
 
 def cec_shifted_sphere_function(x: np.ndarray) -> float:
@@ -20,8 +74,7 @@ def cec_shifted_sphere_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)  # constant shift vector
-    z = x - shift
+    z = x - 0.5
     return float(np.sum(z**2))
 
 
@@ -37,8 +90,7 @@ def cec_shifted_rosenbrock_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift + 1.0
+    z = x - 0.5 + 1.0
     return float(np.sum(100.0 * (z[1:] - z[:-1] ** 2) ** 2 + (z[:-1] - 1) ** 2))  # type: ignore
 
 
@@ -53,10 +105,9 @@ def cec_shifted_rastrigin_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     n = x.shape[0]
-    return float(10 * n + np.sum(z**2 - 10 * np.cos(2 * np.pi * z)))
+    return float(10 * n + np.sum(z**2 - 10 * np.cos(PI2 * z)))
 
 
 def cec_shifted_schwefel_function(x: np.ndarray) -> float:
@@ -70,8 +121,7 @@ def cec_shifted_schwefel_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 420.968746)
-    z = x - shift
+    z = x - 420.968746
     n = x.shape[0]
     return float(418.9829 * n - np.sum(z * np.sin(np.sqrt(np.abs(z)))))
 
@@ -88,10 +138,10 @@ def cec_shifted_griewank_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    n = x.shape[0]
+    z = x - 0.5
     sum_term = np.sum(z**2) / 4000.0
-    prod_term = np.prod(np.cos(z / np.sqrt(np.arange(1, x.shape[0] + 1))))
+    prod_term = np.prod(np.cos(z * _inv_sqrt_indices(n)))
     return float(sum_term - prod_term + 1)
 
 
@@ -107,11 +157,10 @@ def cec_shifted_ackley_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     n = x.shape[0]
     term1 = -20 * np.exp(-0.2 * np.sqrt(np.sum(z**2) / n))
-    term2 = -np.exp(np.sum(np.cos(2 * np.pi * z)) / n)
+    term2 = -np.exp(np.sum(np.cos(PI2 * z)) / n)
     return float(term1 + term2 + 20 + np.e)
 
 
@@ -126,10 +175,9 @@ def cec_shifted_sum_of_different_powers_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
-    indices = np.arange(1, x.shape[0] + 1)
-    return float(np.sum(np.abs(z) ** (indices + 1)))
+    z = x - 0.5
+    indices = _arange_1_to_n(x.shape[0])
+    return float(np.sum(np.power(np.abs(z), indices + 1)))
 
 
 def cec_shifted_zakharov_function(x: np.ndarray) -> float:
@@ -144,11 +192,10 @@ def cec_shifted_zakharov_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     n = x.shape[0]
     s1 = float(np.sum(z**2))
-    weighted_sum = float(np.sum(0.5 * np.arange(1, n + 1) * z))
+    weighted_sum = float(np.sum(_zakharov_coeffs(n) * z))
     return s1 + weighted_sum**2 + weighted_sum**4
 
 
@@ -165,20 +212,16 @@ def cec_shifted_weierstrass_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
-    a = 0.5
-    b = 3
-    k_max = 20
+    z = x - 0.5
     n = x.shape[0]
-    sum1 = 0.0
-    for i in range(n):
-        for k in range(k_max + 1):
-            sum1 += a**k * np.cos(2 * np.pi * b**k * (z[i] + 0.5))
-    sum2 = 0.0
-    for k in range(k_max + 1):
-        sum2 += a**k * np.cos(2 * np.pi * b**k * 0.5)
-    return float(sum1 - n * sum2)
+    k_max = 20
+    a_pow, b_pow, sum2_const = _weierstrass_params(k_max)
+    # angles shape: (n, k_max+1)
+    angles = PI2 * (z[:, None] + 0.5) * b_pow[None, :]
+    cos_terms = np.cos(angles)
+    # sum over k for each i, then sum over i
+    sum1 = float(np.sum(cos_terms @ a_pow))
+    return float(sum1 - n * sum2_const)
 
 
 def cec_shifted_bent_cigar_function(x: np.ndarray) -> float:
@@ -193,8 +236,7 @@ def cec_shifted_bent_cigar_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     return float(z[0] ** 2 + 1e6 * np.sum(z[1:] ** 2))
 
 
@@ -210,8 +252,7 @@ def cec_shifted_discus_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     return float(1e6 * z[0] ** 2 + np.sum(z[1:] ** 2))
 
 
@@ -227,11 +268,10 @@ def cec_shifted_elliptic_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     n = x.shape[0]
-    exponents = np.linspace(0, 1, n)
-    return float(np.sum(10 ** (6 * exponents) * (z**2)))  # type: ignore
+    weights = _elliptic_weights(n)
+    return float(np.sum(weights * (z**2)))  # type: ignore
 
 
 # 11. Expanded Scaffer F6 Function (applied to consecutive pairs)
@@ -253,12 +293,16 @@ def cec_expanded_scaffer_f6(x: np.ndarray) -> float:
         r = np.sqrt(a**2 + b**2)
         return 0.5 + (np.sin(r) ** 2 - 0.5) / ((1 + 0.001 * (a**2 + b**2)) ** 2)
 
-    z = x.copy() - 0.5  # shifting
-    f = 0.0
+    z = x - 0.5
     n = x.shape[0]
-    for i in range(n - 1):
-        f += scaffer_f6(z[i], z[i + 1])
-    return f / (n - 1)
+    if n <= 1:
+        return 0.0
+    a = z[:-1]
+    b = z[1:]
+    r = np.sqrt(a * a + b * b)
+    denom = (1.0 + 0.001 * (a * a + b * b)) ** 2
+    vals = 0.5 + (np.sin(r) ** 2 - 0.5) / denom
+    return float(np.mean(vals))
 
 
 def cec_shifted_lunacek_bi_rastrigin_function(x: np.ndarray) -> float:
@@ -271,15 +315,14 @@ def cec_shifted_lunacek_bi_rastrigin_function(x: np.ndarray) -> float:
 
     where z = x - shift.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     d = x.shape[0]
     mu1 = 2.5
     s = 1.0 - 1.0 / (2.0 * np.sqrt(d + 20.0) - 8.2)
     mu2 = -np.sqrt((mu1**2 - 1.0) / s)
     term_quadratic_1 = float(np.sum((z - mu1) ** 2))
     term_quadratic_2 = float(d + s * np.sum((z - mu2) ** 2))
-    rastrigin_term = float(10.0 * np.sum(1.0 - np.cos(2.0 * np.pi * (z - mu1))))
+    rastrigin_term = float(10.0 * np.sum(1.0 - np.cos(PI2 * (z - mu1))))
     return float(min(term_quadratic_1, term_quadratic_2) + rastrigin_term)
 
 
@@ -298,8 +341,7 @@ def cec_shifted_levy_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     w = 1.0 + (z - 1.0) / 4.0
     term1 = np.sin(np.pi * w[0]) ** 2
     if x.shape[0] > 1:
@@ -324,8 +366,7 @@ def cec_shifted_happy_cat_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     n = x.shape[0]
     sum_z2 = np.sum(z**2)
     term1 = np.abs(sum_z2 - n) ** 0.25
@@ -346,8 +387,7 @@ def cec_shifted_hgbat_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     n = x.shape[0]
     sum_z2 = np.sum(z**2)
     return float(np.abs(sum_z2 - n) ** 0.5 + (0.5 * sum_z2 + np.sum(z)) / n + 0.5)
@@ -366,11 +406,10 @@ def cec_shifted_non_continuous_rastrigin_function(x: np.ndarray) -> float:
     Returns:
         float: Function value.
     """
-    shift = np.full_like(x, 0.5)
-    z = x - shift
+    z = x - 0.5
     z_nc = np.where(np.abs(z) > 0.5, np.round(z * 2) / 2.0, z)
     n = x.shape[0]
-    return float(10 * n + np.sum(z_nc**2 - 10 * np.cos(2 * np.pi * z_nc)))
+    return float(10 * n + np.sum(z_nc**2 - 10 * np.cos(PI2 * z_nc)))
 
 
 def cec_hybrid_composition_function(x: np.ndarray) -> float:
