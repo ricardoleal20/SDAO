@@ -5,6 +5,7 @@ behavior of how our algorithms behaves in a dynamic environment.
 """
 
 from typing import TYPE_CHECKING, Optional
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -65,66 +66,43 @@ class MovingPeaksBenchmark:
         self._initialize_peaks()
 
     def _initialize_peaks(self):
-        """Initialize the peaks with random positions, heights, and widths.
+        """Initialize peaks using vectorized sampling.
 
-        Positions are sampled uniformly from the given bounds.
-        Heights are chosen from a uniform distribution in [30, 70].
-        Widths are chosen from a uniform distribution in [1, 5].
+        Positions are sampled uniformly from bounds with shape (n_peaks, dimension).
+        Heights ~ U[30, 70] and widths ~ U[1, 5].
         """
         lower, upper = self.bounds
-        self.peaks = []
-        for _ in range(self.n_peaks):
-            position = np.random.uniform(lower, upper, self.dimension)
-            height = np.random.uniform(30, 70)
-            width = np.random.uniform(1, 5)
-            self.peaks.append({"position": position, "height": height, "width": width})
+        self.positions = np.random.uniform(
+            lower, upper, size=(self.n_peaks, self.dimension)
+        )
+        self.heights = np.random.uniform(30.0, 70.0, size=(self.n_peaks,))
+        self.widths = np.random.uniform(1.0, 5.0, size=(self.n_peaks,))
 
     def update_peaks(self):
-        """Update the peaks to simulate dynamic changes in the landscape.
-
-        Each peak's position is shifted by a random vector scaled by shift_severity.
-        The heights and widths are also updated with a small random change, and then clamped
-        to their respective ranges.
-        """
+        """Vectorized dynamic update of peak positions, heights and widths."""
         lower, upper = self.bounds
-        for peak in self.peaks:
-            # Update position
-            shift = np.random.uniform(
-                -self.shift_severity, self.shift_severity, self.dimension
-            )
-            new_position = peak["position"] + shift
-            new_position = np.clip(new_position, lower, upper)
-            peak["position"] = new_position
-
-            # Update height
-            height_change = np.random.uniform(
-                -self.height_severity, self.height_severity
-            )
-            peak["height"] = np.clip(peak["height"] + height_change, 30, 70)
-
-            # Update width
-            width_change = np.random.uniform(-self.width_severity, self.width_severity)
-            peak["width"] = np.clip(peak["width"] + width_change, 1, 5)
+        # Update positions
+        shifts = np.random.uniform(
+            -self.shift_severity, self.shift_severity, size=self.positions.shape
+        )
+        self.positions = np.clip(self.positions + shifts, lower, upper)
+        # Update heights and widths
+        h_delta = np.random.uniform(
+            -self.height_severity, self.height_severity, size=self.heights.shape
+        )
+        w_delta = np.random.uniform(
+            -self.width_severity, self.width_severity, size=self.widths.shape
+        )
+        self.heights = np.clip(self.heights + h_delta, 30.0, 70.0)
+        self.widths = np.clip(self.widths + w_delta, 1.0, 5.0)
 
     def __call__(self, x: np.ndarray) -> float:
-        """Evaluate the Moving Peaks Benchmark function at a given point x.
-
-        The function returns the maximum value over all peaks:
-
-            f(x) = max_{i=1,...,n_peaks} (height_i - width_i * ||x - position_i||)
-
-        Args:
-            x (np.ndarray): Input vector.
-
-        Returns:
-            float: Objective function value.
-        """
-        values = []
-        for peak in self.peaks:
-            dist = np.linalg.norm(x - peak["position"])
-            value = peak["height"] - peak["width"] * dist
-            values.append(value)
-        return max(values)
+        """Evaluate f(x) = max_i height_i - width_i * ||x - position_i|| (vectorized)."""
+        # Broadcast x against all positions: (n_peaks, dim) - (dim,) -> (n_peaks, dim)
+        diffs = self.positions - x
+        dists = np.linalg.norm(diffs, axis=1)
+        values = self.heights - self.widths * dists
+        return float(np.max(values))
 
 
 # ----------------------------------------------------------------
