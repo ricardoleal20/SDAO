@@ -256,10 +256,21 @@ if __name__ == "__main__":
         help="Run algorithms in parallel using separate processes.",
     )
     parser.add_argument(
+        "--experiments-parallel",
+        action="store_true",
+        help="Parallelize across experiments (splits experiments into chunks per algorithm).",
+    )
+    parser.add_argument(
         "--max-workers",
         type=int,
         default=os.cpu_count() or 1,
         help="Maximum number of parallel worker processes.",
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=1000,
+        help="Number of experiments per parallel chunk when using --experiments-parallel.",
     )
     parser.add_argument(
         "--seed",
@@ -409,7 +420,7 @@ if __name__ == "__main__":
     # Instance the algorithm(s) and run them for each scenario
     for scenario in scenarios:
         benchmarks_results: dict[str, list[BenchmarkResult]] = {}
-        if args.parallel:
+        if args.parallel and not args.experiments_parallel:
             pr_set_thread_env()
             try:
                 mp.set_start_method("spawn", force=True)
@@ -419,7 +430,9 @@ if __name__ == "__main__":
             seed_seq = np.random.SeedSequence(base_seed)
             child_seeds = seed_seq.spawn(len(algorithms_keys))
             max_workers = max(1, int(args.max_workers))
-            with ProcessPoolExecutor(max_workers=max_workers) as ex:
+            with ProcessPoolExecutor(
+                max_workers=max_workers, initializer=pr_set_thread_env
+            ) as ex:
                 print(
                     f"Running {len(algorithms_keys)} algorithms in parallel with {max_workers} workers..."
                 )
@@ -449,28 +462,95 @@ if __name__ == "__main__":
                     benchmarks_results[name] = results
                     print(f"✓ Completed {name} ({i}/{len(futures)})")
         else:
-            solver = Solver(
-                num_experiments=args.experiments,
-                functions=functions_due_to_scenario(scenario),
-            )
-            for i, algo_key in enumerate(algorithms_keys, start=1):
-                alg = pr_create_algorithm(algo_key, args.iterations, args.verbose)
-                NAME = alg.__class__.__name__
+            if args.experiments_parallel:
+                # Parallelize across experiment chunks per algorithm
+                pr_set_thread_env()
+                try:
+                    mp.set_start_method("spawn", force=True)
+                except RuntimeError:
+                    pass
+                max_workers = max(1, int(args.max_workers))
+                chunk = max(1, int(args.chunk_size))
+                total = int(args.experiments)
+                num_chunks = (total + chunk - 1) // chunk
                 print(
-                    f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms_keys)}\033[0m"
+                    f"Experiment-parallel mode: total={total}, chunk={chunk}, chunks={num_chunks}, workers={max_workers}"
                 )
-                print(32 * "=")
-                results = solver.benchmark(
-                    dimension=args.dimension,
-                    model=alg.optimize,
-                    trajectory=alg.trajectory,
-                    store_trajectory=not args.no_trajectory,
-                    profile_memory=not args.no_mem,
-                    show_progress=args.progress,
+                for i, algo_key in enumerate(algorithms_keys, start=1):
+                    print(
+                        f"Running the {algo_key} algorithm... \033[50mRunning {i}/{len(algorithms_keys)}\033[0m"
+                    )
+                    print(32 * "=")
+                    # Make seeds for chunks
+                    base_seed = args.seed
+                    seed_seq = np.random.SeedSequence(base_seed)
+                    child_seeds = seed_seq.spawn(num_chunks)
+                    results_concat: list[BenchmarkResult] = []
+                    from model.parallel_runner import (
+                        run_experiment_chunk_job as pr_run_chunk,
+                    )
+
+                    with ProcessPoolExecutor(
+                        max_workers=max_workers, initializer=pr_set_thread_env
+                    ) as ex:
+                        futures = []
+                        for idx in range(num_chunks):
+                            csize = (
+                                chunk
+                                if (idx + 1) * chunk <= total
+                                else (total - idx * chunk)
+                            )
+                            seed = int(child_seeds[idx].generate_state(1)[0])
+                            futures.append(
+                                ex.submit(
+                                    pr_run_chunk,
+                                    scenario,
+                                    algo_key,
+                                    args.iterations,
+                                    args.dimension,
+                                    csize,
+                                    args.verbose,
+                                    seed,
+                                    not args.no_trajectory,
+                                    not args.no_mem,
+                                    args.progress,
+                                )
+                            )
+                        for j, fut in enumerate(as_completed(futures), 1):
+                            name, part = fut.result()
+                            results_concat.extend(part)
+                            print(f"  ✓ Chunk {j}/{len(futures)} done for {name}")
+                    # Assign concatenated results
+                    NAME = pr_create_algorithm(
+                        algo_key, args.iterations, args.verbose
+                    ).__class__.__name__
+                    benchmarks_results[NAME] = results_concat
+                    print(f"\u2713 Completed {NAME} ({i}/{len(algorithms_keys)})")
+                    print("\n")
+            else:
+                # Sequential fallback
+                solver = Solver(
+                    num_experiments=args.experiments,
+                    functions=functions_due_to_scenario(scenario),
                 )
-                benchmarks_results[NAME] = results
-                print(f"\u2713 Completed {NAME} ({i}/{len(algorithms_keys)})")
-                print("\n")
+                for i, algo_key in enumerate(algorithms_keys, start=1):
+                    alg = pr_create_algorithm(algo_key, args.iterations, args.verbose)
+                    NAME = alg.__class__.__name__
+                    print(
+                        f"Running the {NAME} algorithm... \033[50mRunning {i}/{len(algorithms_keys)}\033[0m"
+                    )
+                    print(32 * "=")
+                    results = solver.benchmark(
+                        dimension=args.dimension,
+                        model=alg.optimize,
+                        trajectory=alg.trajectory,
+                        store_trajectory=not args.no_trajectory,
+                        profile_memory=not args.no_mem,
+                        show_progress=args.progress,
+                    )
+                    benchmarks_results[NAME] = results
+                    print(f"\u2713 Completed {NAME} ({i}/{len(algorithms_keys)})")
+                    print("\n")
 
         # Store the results for this scenario
         with open(f"scenario_{scenario}_d_{args.dimension}.pkl", "wb") as f:

@@ -207,3 +207,44 @@ def run_algorithm_job(
     )
     print(f"[PID {os.getpid()}] Completed {name}")
     return name, results
+
+
+def run_experiment_chunk_job(
+    scenario: int,
+    algo_key: str,
+    iterations: int,
+    dimension: int,
+    chunk_experiments: int,
+    verbose: bool,
+    seed: int,
+    store_trajectory: bool,
+    profile_memory: bool,
+    show_progress: bool,
+) -> Tuple[str, List[BenchmarkResult]]:
+    import os
+
+    print(
+        f"[PID {os.getpid()}] Chunk start {algo_key} seed={seed} exp={chunk_experiments}",
+        flush=True,
+    )
+    set_thread_env()
+    try:
+        random.seed(seed)
+        np.random.seed(seed)
+    except Exception:
+        pass
+    solver = Solver(
+        num_experiments=chunk_experiments, functions=functions_due_to_scenario(scenario)
+    )
+    alg = create_algorithm(algo_key, iterations, verbose)
+    name = alg.__class__.__name__
+    results = solver.benchmark(
+        dimension=dimension,
+        model=alg.optimize,
+        trajectory=alg.trajectory,
+        store_trajectory=store_trajectory,
+        profile_memory=profile_memory,
+        show_progress=show_progress,
+    )
+    print(f"[PID {os.getpid()}] Chunk finished {name} (n={len(results)})", flush=True)
+    return name, results
