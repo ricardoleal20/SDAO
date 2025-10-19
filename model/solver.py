@@ -8,14 +8,15 @@ In here, we'll select:
     - The number of experiments
 """
 
-from typing import Callable, TypedDict, Sequence, Optional
-from typing_extensions import NotRequired
 import time
 import tracemalloc
+from typing import Callable, Optional, Sequence, TypedDict
+
 import numpy as np
 
 # Import TQDM for the progress bar
 from tqdm import tqdm
+from typing_extensions import NotRequired
 
 # Local imports
 from model.soa.template import StepSolution
@@ -75,6 +76,10 @@ class Solver:
             tuple[float, np.ndarray],
         ],
         trajectory: Callable[[], list[StepSolution]],
+        *,
+        store_trajectory: bool = False,
+        profile_memory: bool = False,
+        show_progress: bool = False,
     ) -> list[BenchmarkResult]:
         """Benchmark the model using the given functions."""
         results: list[BenchmarkResult] = []
@@ -83,17 +88,24 @@ class Solver:
             # Get the dimension of the function, just in case that
             # we do not have it on the Experimental Function...
             print(f"Running benchmark for {func['name']}... {i / total_functions:.2%}")
-            for i in tqdm(range(self._n_of_exp)):
+            iter_obj = (
+                tqdm(range(self._n_of_exp)) if show_progress else range(self._n_of_exp)
+            )
+            for i in iter_obj:
                 # Calculate the time taken in this iteration
                 start_time = time.time()
                 # Also, calculate the memory usage
-                tracemalloc.start()
+                if profile_memory:
+                    tracemalloc.start()
                 # Run the model
                 best_value, best_position = model(
                     func["call"], func["domain"], func.get("dimension", dimension)
                 )
-                _, peak = tracemalloc.get_traced_memory()
-                tracemalloc.stop()
+                if profile_memory:
+                    _, peak = tracemalloc.get_traced_memory()
+                    tracemalloc.stop()
+                else:
+                    peak = 0
                 # With this, append the results
                 results.append(
                     {
@@ -101,7 +113,7 @@ class Solver:
                         "best_value": best_value,
                         "best_position": best_position,
                         "function": func["name"],
-                        "trajectory": trajectory(),
+                        "trajectory": trajectory() if store_trajectory else [],
                         "time": (time.time() - start_time)
                         * 1000,  # to convert it to microseconds
                         # Memory usage is initially in kilobytes, converting it to megabytes
