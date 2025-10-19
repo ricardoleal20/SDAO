@@ -4,6 +4,7 @@ and possible domain.
 """
 
 from typing import TYPE_CHECKING
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -27,8 +28,8 @@ def vrp_objective(
     Returns:
         float: Total cost of the route.
     """
-    total_cost = 0
-    current_time = 0
+    total_cost = 0.0
+    current_time = 0.0
 
     # Simulate noise in the travel times, this is going to
     # simulate possible traffic jams or other delays.
@@ -38,33 +39,24 @@ def vrp_objective(
     # Keep the diagonal as 0. THIS IS A HARD CONSTRAINT FOR THE VRP.
     np.fill_diagonal(noisy_travel_times, 0)
 
-    # Modify the route to round it to the nearest integer.
-    route = np.round(route, 0)
-    # in case that we've repeated cities in the route, we're going
-    # to return an infinite cost.
-    # * HARD CONSTRAINT. If the route doesn't have the same length as the deadlines,
-    # * we're going to return a very large number to avoid this solution.
-    if len(route) != len(set(route)) or len(route) != len(deadlines):
-        return float("1e12")  # a very large number...
+    # Modify the route to round it to the nearest integer and cast to int indices.
+    route_int = np.round(route, 0).astype(int)
+    # HARD CONSTRAINTS: no repeats and route length must match deadlines length
+    if route_int.size != np.unique(route_int).size or route_int.size != deadlines.size:
+        return float("1e12")
 
-    # Then, iteerate over the calculated route to calculate the total cost.
-    for i in range(len(route) - 1):
-        # * Add the origin and the destination to know the travel time.
-        origin = int(route[i])
-        destination = int(route[i + 1])
-        # Add travel time with noise
-        travel_time = noisy_travel_times[origin][destination]
-        current_time += travel_time
-
-        # # Add a penalty if the current time is greater than the deadline.
-        if current_time > deadlines[destination]:
-            # The later the delivery, the higher the cost.
-            total_cost += current_time - deadlines[destination]
-        total_cost += travel_time  # Add the travel time to the total cost.
-
-    # At the end, add one penalty for the last city to return to the depot.
-    total_cost += noisy_travel_times[int(route[-1])][int(route[0])]
-    return total_cost
+    # Vectorized edge traversal
+    origins = route_int[:-1]
+    dests = route_int[1:]
+    edge_times = noisy_travel_times[origins, dests]
+    # Cumulative arrival times at each destination
+    arrivals = np.cumsum(edge_times)
+    dest_deadlines = deadlines[dests]
+    penalties = np.where(arrivals > dest_deadlines, arrivals - dest_deadlines, 0.0)
+    total_cost = float(edge_times.sum() + penalties.sum())
+    # Return to depot
+    total_cost += float(noisy_travel_times[route_int[-1], route_int[0]])
+    return float(total_cost)
 
 
 def predictive_maintenance_objective(
@@ -87,24 +79,14 @@ def predictive_maintenance_objective(
     Returns:
         float: Total cost of the maintenance schedule.
     """
-    total_cost = 0
-
-    for i, maintenance_time in enumerate(schedule):
-        # Probability of failure before maintenance...
-        failure_prob = failure_probs[i]
-
-        # * Simulate if the component fails before maintenance.
-        # * If it fails, the cost is higher.
-        # * If it not fails, the cost is lower.
-        if np.random.random() < failure_prob:
-            # Unexpected failure, add a downtime cost.
-            total_cost += repair_costs[i] + downtime_costs * (maintenance_time - 0)
-        else:
-            # Preventive maintenance cost.
-            # Maintenance costs are lower than preventive.
-            total_cost += repair_costs[i] * 0.5
-
-    return total_cost
+    # Vectorized sampling of failures per component
+    failures = np.random.random(size=failure_probs.shape) < failure_probs
+    # Cost if failure occurs before maintenance
+    cost_fail = repair_costs + downtime_costs * schedule
+    # Preventive maintenance cost (lower)
+    cost_ok = repair_costs * 0.5
+    total_cost = np.where(failures, cost_fail, cost_ok).sum()
+    return float(total_cost)
 
 
 def chemical_experiment_objective(
