@@ -5,34 +5,33 @@ method on macOS/Windows. Workers import functions from here instead of __main__.
 
 from __future__ import annotations
 
-from functools import partial
 import os
 import random
 import warnings
+from functools import partial
 from typing import List, Tuple
 
 import numpy as np
 
 from model.functions.bench_funcs import bench_funcs
-from model.functions.stoch_funcs import stoch_funcs
-from model.functions.real_life_funcs import real_life_funcs
 from model.functions.cec_funcs import cec_funcs
 from model.functions.mpb_funcs import mpb_benchmarks
+from model.functions.real_life_funcs import real_life_funcs
 from model.functions.soco_funcs import soco_funcs
-from model.solver import Solver, ExperimentFunction, BenchmarkResult
-from model.soa.template import Algorithm
+from model.functions.stoch_funcs import stoch_funcs
 from model.sdao import SDAO
-from model.soa.fractal import StochasticFractalSearch
 from model.soa.algebraic_sgd import AlgebraicSGD
-from model.soa.shade import SHADEwithILS
-from model.soa.path_relinking import PathRelinking
 from model.soa.amso import AMSO
-from model.soa.tlpso import TLPSO
-from model.soa.sfoa import SFOA
-from model.soa.pade_pet import PaDE_PET
 from model.soa.fishing_cat import FCO
+from model.soa.fractal import StochasticFractalSearch
 from model.soa.gfa import GFA
-
+from model.soa.pade_pet import PaDE_PET
+from model.soa.path_relinking import PathRelinking
+from model.soa.sfoa import SFOA
+from model.soa.shade import SHADEwithILS
+from model.soa.template import Algorithm
+from model.soa.tlpso import TLPSO
+from model.solver import BenchmarkResult, ExperimentFunction, Solver
 
 # Define the Cities for the VRP problem (duplicated here for worker isolation)
 travel_times = np.array(
@@ -149,7 +148,9 @@ def create_algorithm(key: str, iterations: int, verbose: bool) -> Algorithm:
                 verbose=verbose,
             )
         case "amso":
-            return AMSO(num_swarms=5, swarm_size=10, n_iterations=iterations, verbose=verbose)
+            return AMSO(
+                num_swarms=5, swarm_size=10, n_iterations=iterations, verbose=verbose
+            )
         case "tlpso":
             return TLPSO(
                 global_swarm_size=5,
@@ -177,8 +178,12 @@ def run_algorithm_job(
     experiments: int,
     verbose: bool,
     seed: int,
+    store_trajectory: bool,
+    profile_memory: bool,
+    show_progress: bool,
 ) -> Tuple[str, List[BenchmarkResult]]:
     import os
+
     print(f"[PID {os.getpid()}] Starting {algo_key} with seed {seed}")
     set_thread_env()
     try:
@@ -186,12 +191,19 @@ def run_algorithm_job(
         np.random.seed(seed)
     except Exception:
         pass
-    solver = Solver(num_experiments=experiments, functions=functions_due_to_scenario(scenario))
+    solver = Solver(
+        num_experiments=experiments, functions=functions_due_to_scenario(scenario)
+    )
     alg = create_algorithm(algo_key, iterations, verbose)
     name = alg.__class__.__name__
     print(f"[PID {os.getpid()}] Running {name} benchmark...")
-    results = solver.benchmark(dimension=dimension, model=alg.optimize, trajectory=alg.trajectory)
+    results = solver.benchmark(
+        dimension=dimension,
+        model=alg.optimize,
+        trajectory=alg.trajectory,
+        store_trajectory=store_trajectory,
+        profile_memory=profile_memory,
+        show_progress=show_progress,
+    )
     print(f"[PID {os.getpid()}] Completed {name}")
     return name, results
-
-

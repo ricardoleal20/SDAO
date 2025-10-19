@@ -267,6 +267,21 @@ if __name__ == "__main__":
         default=12345,
         help="Base seed for reproducible parallel runs.",
     )
+    parser.add_argument(
+        "--no-trajectory",
+        action="store_true",
+        help="Do not store per-iteration trajectory in results (saves memory/time).",
+    )
+    parser.add_argument(
+        "--no-mem",
+        action="store_true",
+        help="Disable memory profiling with tracemalloc (saves overhead).",
+    )
+    parser.add_argument(
+        "--progress",
+        action="store_true",
+        help="Show tqdm progress bars for experiments.",
+    )
 
     args = parser.parse_args()
 
@@ -423,6 +438,9 @@ if __name__ == "__main__":
                             args.experiments,
                             args.verbose,
                             seed,
+                            not args.no_trajectory,
+                            not args.no_mem,
+                            args.progress,
                         )
                     )
                 print(f"Submitted {len(futures)} jobs, waiting for completion...")
@@ -446,8 +464,12 @@ if __name__ == "__main__":
                     dimension=args.dimension,
                     model=alg.optimize,
                     trajectory=alg.trajectory,
+                    store_trajectory=not args.no_trajectory,
+                    profile_memory=not args.no_mem,
+                    show_progress=args.progress,
                 )
                 benchmarks_results[NAME] = results
+                print(f"\u2713 Completed {NAME} ({i}/{len(algorithms_keys)})")
                 print("\n")
 
         # Store the results for this scenario
