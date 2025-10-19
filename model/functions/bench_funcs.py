@@ -5,8 +5,9 @@ Define the normal benchmark functions to test the algorithms, including
 their name and possible domain.
 """
 
-from typing import TYPE_CHECKING
 import math
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ def rastrigin_function(x: np.ndarray) -> float | int:
     """
     dim = len(x)
     param = 10
-    return param * dim + float(np.sum(x**2 - param * np.cos(2 * np.pi * x)))
+    return param * dim + float(np.sum(np.square(x) - param * np.cos(2 * np.pi * x)))
 
 
 def sphere_function(x: np.ndarray) -> float | np.signedinteger:
@@ -35,7 +36,7 @@ def sphere_function(x: np.ndarray) -> float | np.signedinteger:
     **Returns**:
         - float: The value of the sphere function at the given position.
     """
-    return np.sum(x**2)
+    return np.dot(x, x)
 
 
 def rosenbrock_function(x: np.ndarray) -> float:
@@ -49,7 +50,9 @@ def rosenbrock_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Rosenbrock function at the given position.
     """
-    return sum((1 - x[:-1]) ** 2 + 100 * (x[1:] - x[:-1] ** 2) ** 2)
+    xi = x[:-1]
+    xnext = x[1:]
+    return float(np.sum((1 - xi) ** 2 + 100.0 * (xnext - xi * xi) ** 2))
 
 
 def ackley_function(x: np.ndarray) -> float:
@@ -64,12 +67,13 @@ def ackley_function(x: np.ndarray) -> float:
         - float: The value of the Ackley function at the given position.
     """
     d = len(x)
-    sum_sq = np.sum(x**2)
-    sum_cos = np.sum(np.cos(2 * math.pi * x))
+    sum_sq = float(np.dot(x, x))
+    sqrt_term = np.sqrt(sum_sq / d)
+    mean_cos = float(np.cos(2.0 * math.pi * x).mean())
     return (
-        -20 * math.exp(-0.2 * math.sqrt(sum_sq / d))
-        - math.exp(sum_cos / d)
-        + 20
+        -20.0 * float(np.exp(-0.2 * sqrt_term))
+        - float(np.exp(mean_cos))
+        + 20.0
         + math.e
     )
 
@@ -85,7 +89,7 @@ def schwefel_function(x: np.ndarray) -> float:
         - float: The value of the Schwefel function at the given position.
     """
     d = len(x)
-    return 418.9829 * d - np.sum(x * np.sin(np.sqrt(np.abs(x))))
+    return 418.9829 * d - float(np.sum(x * np.sin(np.sqrt(np.abs(x)))))
 
 
 def drop_wave_function(x: np.ndarray) -> float:
@@ -99,8 +103,8 @@ def drop_wave_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Drop-Wave function at the given position.
     """
-    quadratic_sum = np.sum([y**2 for y in x])
-    numerator = 1 + math.cos(12 * math.sqrt(quadratic_sum))
+    quadratic_sum = float(np.dot(x, x))
+    numerator = 1 + math.cos(12.0 * math.sqrt(quadratic_sum))
     denominator = 0.5 * (quadratic_sum) + 2
     return 1 - (numerator / denominator)
 
@@ -155,10 +159,13 @@ def weierstrass_function(x: np.ndarray) -> float:
     a = 0.5
     b = 3.0
     d = len(x)
-    sum1 = sum(
-        a**k * np.cos(2 * math.pi * b**k * (xi + 0.5)) for xi in x for k in range(21)
-    )
-    sum2 = sum(a**k * np.cos(math.pi * b**k) for k in range(21))
+    k = np.arange(21, dtype=float)
+    a_pow = a**k
+    b_pow = b**k
+    # shape: (d, 21)
+    phases = 2.0 * math.pi * (x[:, None] + 0.5) * b_pow[None, :]
+    sum1 = float(np.sum(a_pow[None, :] * np.cos(phases)))
+    sum2 = float(np.sum(a_pow * np.cos(math.pi * b_pow)))
     return sum1 - d * sum2
 
 
@@ -172,9 +179,10 @@ def griewank_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Griewank's function at the given position.
     """
-    sum_sq = np.sum(x**2) / 4000
-    prod_cos = np.prod(np.cos(x / np.sqrt(np.arange(1, len(x) + 1))))
-    return sum_sq - prod_cos + 1  # type: ignore
+    sum_sq = float(np.dot(x, x)) / 4000.0
+    idx = np.sqrt(np.arange(1, len(x) + 1, dtype=float))
+    prod_cos = float(np.prod(np.cos(x / idx)))
+    return sum_sq - prod_cos + 1
 
 
 def happy_cat_function(x: np.ndarray) -> float:
@@ -189,10 +197,9 @@ def happy_cat_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the HappyCat function at the given position.
     """
-    sum_sq = np.sum(x**2)
-    additional_sum = sum(
-        (1 / (8 * (i + 1))) * (xi**2 - 1) ** 2 for i, xi in enumerate(x)
-    )
+    sum_sq = float(np.dot(x, x))
+    i = np.arange(1, len(x) + 1, dtype=float)
+    additional_sum = float(np.sum(((np.square(x) - 1.0) ** 2) / (8.0 * i)))
     return (
         np.abs(sum_sq - 4) ** 0.25
         + 0.5 * (sum_sq - 4)
@@ -215,7 +222,7 @@ def schaffer_f7_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Schaffer's F7 function at the given position.
     """
-    sq_sum = np.sum([y**2 for y in x])
+    sq_sum = float(np.dot(x, x))
     return 0.5 + (math.sin(math.sqrt(sq_sum)) ** 2 - 0.5) / (1 + 0.001 * sq_sum) ** 2
 
 
@@ -233,7 +240,7 @@ def expanded_schaffer_f6_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Expanded Schaffer's F6 function at the given position.
     """
-    sq_sum = np.sum([y**2 for y in x])
+    sq_sum = float(np.dot(x, x))
     return 0.5 + (math.sin(math.sqrt(sq_sum)) ** 2 - 0.5) / (1 + 0.001 * sq_sum) ** 2
 
 
@@ -260,8 +267,9 @@ def salomon_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Salomon function at the given position.
     """
-    sum_sq = np.sum(x**2)
-    return 1 - math.cos(2 * math.pi * math.sqrt(sum_sq)) + 0.1 * math.sqrt(sum_sq)
+    sum_sq = float(np.dot(x, x))
+    r = math.sqrt(sum_sq)
+    return 1.0 - math.cos(2.0 * math.pi * r) + 0.1 * r
 
 
 # ========================================================= #
