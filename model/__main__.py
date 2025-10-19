@@ -2,45 +2,50 @@
 Run the algorithm...
 """
 
-from argparse import ArgumentParser
-import warnings
-import pickle
-from functools import partial
-import os
-from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
+import os
+import pickle
+import warnings
+from argparse import ArgumentParser
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
+
 import matplotlib.pyplot as plt  # pylint: disable=E0401
-import pydash as _py
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pydash as _py
 
 # Local imports
 from model.functions.bench_funcs import bench_funcs
-from model.functions.stoch_funcs import stoch_funcs
-from model.functions.real_life_funcs import real_life_funcs
 from model.functions.cec_funcs import cec_funcs
-from model.functions.soco_funcs import soco_funcs
 from model.functions.mpb_funcs import mpb_benchmarks
-from model.solver import Solver, ExperimentFunction, BenchmarkResult
-from model.utils import statistical_tests
+from model.functions.real_life_funcs import real_life_funcs
+from model.functions.soco_funcs import soco_funcs
+from model.functions.stoch_funcs import stoch_funcs
+from model.parallel_runner import (
+    create_algorithm as pr_create_algorithm,
+)
+from model.parallel_runner import (
+    run_algorithm_job as pr_run_algorithm_job,
+)
+from model.parallel_runner import (
+    set_thread_env as pr_set_thread_env,
+)
 
 # Model imports
 from model.sdao import SDAO
-from model.soa.fractal import StochasticFractalSearch
 from model.soa.algebraic_sgd import AlgebraicSGD
-from model.soa.shade import SHADEwithILS
-from model.soa.path_relinking import PathRelinking
 from model.soa.amso import AMSO
-from model.soa.tlpso import TLPSO
-from model.soa.sfoa import SFOA
-from model.soa.pade_pet import PaDE_PET
 from model.soa.fishing_cat import FCO
+from model.soa.fractal import StochasticFractalSearch
 from model.soa.gfa import GFA
-from model.parallel_runner import (
-    set_thread_env as pr_set_thread_env,
-    create_algorithm as pr_create_algorithm,
-    run_algorithm_job as pr_run_algorithm_job,
-)
+from model.soa.pade_pet import PaDE_PET
+from model.soa.path_relinking import PathRelinking
+from model.soa.sfoa import SFOA
+from model.soa.shade import SHADEwithILS
+from model.soa.tlpso import TLPSO
+from model.solver import BenchmarkResult, ExperimentFunction, Solver
+from model.utils import statistical_tests
 
 # Define the Cities for the VRP problem
 # 0 => New York, 1 => LA, 2 => Chicago, 3 => Houston, 4 => Phoenix

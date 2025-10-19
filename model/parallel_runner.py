@@ -18,6 +18,7 @@ from model.functions.stoch_funcs import stoch_funcs
 from model.functions.real_life_funcs import real_life_funcs
 from model.functions.cec_funcs import cec_funcs
 from model.functions.mpb_funcs import mpb_benchmarks
+from model.functions.soco_funcs import soco_funcs
 from model.solver import Solver, ExperimentFunction, BenchmarkResult
 from model.soa.template import Algorithm
 from model.sdao import SDAO
@@ -97,6 +98,12 @@ def functions_due_to_scenario(scenario: int) -> List[ExperimentFunction]:
                 + "Each example has his own dimension set for the demo.\033[0m"
             )
             return mpb_benchmarks
+        case 5:
+            warnings.warn(
+                "\033[93mThe dimension is going to be ignored for this scenario. "
+                + "Each example has his own dimension set for the demo.\033[0m"
+            )
+            return soco_funcs
         case _:
             raise NotImplementedError(f"Invalid scenario. Scenario: {scenario}")
 
