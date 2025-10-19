@@ -2,9 +2,10 @@
 Include the CEC functions
 """
 
-from typing import TYPE_CHECKING
-import numpy as np
 from functools import lru_cache
+from typing import TYPE_CHECKING
+
+import numpy as np
 
 if TYPE_CHECKING:
     from model.solver import ExperimentFunction
@@ -75,7 +76,7 @@ def cec_shifted_sphere_function(x: np.ndarray) -> float:
         float: Function value.
     """
     z = x - 0.5
-    return float(np.sum(z**2))
+    return float(np.dot(z, z))
 
 
 def cec_shifted_rosenbrock_function(x: np.ndarray) -> float:
@@ -91,7 +92,9 @@ def cec_shifted_rosenbrock_function(x: np.ndarray) -> float:
         float: Function value.
     """
     z = x - 0.5 + 1.0
-    return float(np.sum(100.0 * (z[1:] - z[:-1] ** 2) ** 2 + (z[:-1] - 1) ** 2))  # type: ignore
+    zi = z[:-1]
+    zip1 = z[1:]
+    return float(np.sum(100.0 * (zip1 - zi * zi) ** 2 + (zi - 1.0) ** 2))
 
 
 def cec_shifted_rastrigin_function(x: np.ndarray) -> float:
@@ -107,7 +110,7 @@ def cec_shifted_rastrigin_function(x: np.ndarray) -> float:
     """
     z = x - 0.5
     n = x.shape[0]
-    return float(10 * n + np.sum(z**2 - 10 * np.cos(PI2 * z)))
+    return float(10 * n + (np.dot(z, z) - np.sum(10.0 * np.cos(PI2 * z))))
 
 
 def cec_shifted_schwefel_function(x: np.ndarray) -> float:
@@ -140,7 +143,7 @@ def cec_shifted_griewank_function(x: np.ndarray) -> float:
     """
     n = x.shape[0]
     z = x - 0.5
-    sum_term = np.sum(z**2) / 4000.0
+    sum_term = float(np.dot(z, z)) / 4000.0
     prod_term = np.prod(np.cos(z * _inv_sqrt_indices(n)))
     return float(sum_term - prod_term + 1)
 
@@ -159,9 +162,11 @@ def cec_shifted_ackley_function(x: np.ndarray) -> float:
     """
     z = x - 0.5
     n = x.shape[0]
-    term1 = -20 * np.exp(-0.2 * np.sqrt(np.sum(z**2) / n))
-    term2 = -np.exp(np.sum(np.cos(PI2 * z)) / n)
-    return float(term1 + term2 + 20 + np.e)
+    sumsq = float(np.dot(z, z))
+    term1 = -20.0 * float(np.exp(-0.2 * np.sqrt(sumsq / n)))
+    mean_cos = float(np.mean(np.cos(PI2 * z)))
+    term2 = -float(np.exp(mean_cos))
+    return float(term1 + term2 + 20.0 + np.e)
 
 
 def cec_shifted_sum_of_different_powers_function(x: np.ndarray) -> float:
@@ -194,7 +199,7 @@ def cec_shifted_zakharov_function(x: np.ndarray) -> float:
     """
     z = x - 0.5
     n = x.shape[0]
-    s1 = float(np.sum(z**2))
+    s1 = float(np.dot(z, z))
     weighted_sum = float(np.sum(_zakharov_coeffs(n) * z))
     return s1 + weighted_sum**2 + weighted_sum**4
 
@@ -237,7 +242,7 @@ def cec_shifted_bent_cigar_function(x: np.ndarray) -> float:
         float: Function value.
     """
     z = x - 0.5
-    return float(z[0] ** 2 + 1e6 * np.sum(z[1:] ** 2))
+    return float(z[0] ** 2 + 1e6 * np.dot(z[1:], z[1:]))
 
 
 def cec_shifted_discus_function(x: np.ndarray) -> float:
@@ -253,7 +258,7 @@ def cec_shifted_discus_function(x: np.ndarray) -> float:
         float: Function value.
     """
     z = x - 0.5
-    return float(1e6 * z[0] ** 2 + np.sum(z[1:] ** 2))
+    return float(1e6 * z[0] ** 2 + np.dot(z[1:], z[1:]))
 
 
 def cec_shifted_elliptic_function(x: np.ndarray) -> float:
@@ -271,7 +276,7 @@ def cec_shifted_elliptic_function(x: np.ndarray) -> float:
     z = x - 0.5
     n = x.shape[0]
     weights = _elliptic_weights(n)
-    return float(np.sum(weights * (z**2)))  # type: ignore
+    return float(np.dot(weights, np.square(z)))
 
 
 # 11. Expanded Scaffer F6 Function (applied to consecutive pairs)
@@ -299,8 +304,9 @@ def cec_expanded_scaffer_f6(x: np.ndarray) -> float:
         return 0.0
     a = z[:-1]
     b = z[1:]
-    r = np.sqrt(a * a + b * b)
-    denom = (1.0 + 0.001 * (a * a + b * b)) ** 2
+    s = a * a + b * b
+    r = np.sqrt(s)
+    denom = (1.0 + 0.001 * s) ** 2
     vals = 0.5 + (np.sin(r) ** 2 - 0.5) / denom
     return float(np.mean(vals))
 
@@ -320,9 +326,11 @@ def cec_shifted_lunacek_bi_rastrigin_function(x: np.ndarray) -> float:
     mu1 = 2.5
     s = 1.0 - 1.0 / (2.0 * np.sqrt(d + 20.0) - 8.2)
     mu2 = -np.sqrt((mu1**2 - 1.0) / s)
-    term_quadratic_1 = float(np.sum((z - mu1) ** 2))
-    term_quadratic_2 = float(d + s * np.sum((z - mu2) ** 2))
-    rastrigin_term = float(10.0 * np.sum(1.0 - np.cos(PI2 * (z - mu1))))
+    zm1 = z - mu1
+    zm2 = z - mu2
+    term_quadratic_1 = float(np.dot(zm1, zm1))
+    term_quadratic_2 = float(d + s * np.dot(zm2, zm2))
+    rastrigin_term = float(10.0 * np.sum(1.0 - np.cos(PI2 * zm1)))
     return float(min(term_quadratic_1, term_quadratic_2) + rastrigin_term)
 
 
@@ -345,12 +353,13 @@ def cec_shifted_levy_function(x: np.ndarray) -> float:
     w = 1.0 + (z - 1.0) / 4.0
     term1 = np.sin(np.pi * w[0]) ** 2
     if x.shape[0] > 1:
-        term2 = np.sum(
-            (w[:-1] - 1.0) ** 2 * (1.0 + 10.0 * (np.sin(np.pi * w[:-1] + 1.0) ** 2))
-        )
+        w_head = w[:-1]
+        t = w_head - 1.0
+        term2 = np.sum(t * t * (1.0 + 10.0 * (np.sin(np.pi * w_head + 1.0) ** 2)))
     else:
         term2 = 0.0
-    term3 = (w[-1] - 1.0) ** 2 * (1.0 + (np.sin(2.0 * np.pi * w[-1]) ** 2))
+    t_last = w[-1] - 1.0
+    term3 = t_last * t_last * (1.0 + (np.sin(2.0 * np.pi * w[-1]) ** 2))
     return float(term1 + term2 + term3)
 
 
@@ -368,7 +377,7 @@ def cec_shifted_happy_cat_function(x: np.ndarray) -> float:
     """
     z = x - 0.5
     n = x.shape[0]
-    sum_z2 = np.sum(z**2)
+    sum_z2 = float(np.dot(z, z))
     term1 = np.abs(sum_z2 - n) ** 0.25
     term2 = (0.5 * sum_z2 + np.sum(z)) / n + 0.5
     return float(term1 + term2)
@@ -389,7 +398,7 @@ def cec_shifted_hgbat_function(x: np.ndarray) -> float:
     """
     z = x - 0.5
     n = x.shape[0]
-    sum_z2 = np.sum(z**2)
+    sum_z2 = float(np.dot(z, z))
     return float(np.abs(sum_z2 - n) ** 0.5 + (0.5 * sum_z2 + np.sum(z)) / n + 0.5)
 
 
@@ -713,6 +722,7 @@ def cec_composition_10(x: np.ndarray) -> float:
     biases = [0.0, 100.0, 200.0]
     sigmas = [5.0, 10.0, 15.0]
     return _composition_weighted_sum(x, funcs, biases, sigmas)
+
 
 # List of CEC benchmark functions
 cec_funcs: list["ExperimentFunction"] = [
