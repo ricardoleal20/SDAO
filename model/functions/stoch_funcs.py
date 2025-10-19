@@ -5,9 +5,10 @@ Define the stochastic benchmark functions to test the algorithms, including
 their name and possible domain.
 """
 
-from typing import TYPE_CHECKING
 import math
 import random
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -25,7 +26,11 @@ def stochastic_rastrigin_function(x: np.ndarray) -> float | int:
     param = 10
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 1)
-    return param * dim + float(np.sum(x**2 - param * np.cos(2 * np.pi * x))) + noise
+    return (
+        param * dim
+        + float(np.dot(x, x) - np.sum(param * np.cos(2 * np.pi * x)))
+        + noise
+    )
 
 
 def stochastic_sphere_function(x: np.ndarray) -> float:
@@ -40,7 +45,7 @@ def stochastic_sphere_function(x: np.ndarray) -> float:
     """
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
-    return float(np.sum(x**2)) + noise
+    return float(np.dot(x, x)) + noise
 
 
 def stochastic_rosenbrock_function(x: np.ndarray) -> float:
@@ -56,7 +61,9 @@ def stochastic_rosenbrock_function(x: np.ndarray) -> float:
     """
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
-    return sum((1 - x[:-1]) ** 2 + 100 * (x[1:] - x[:-1] ** 2) ** 2) + noise
+    xi = x[:-1]
+    xnext = x[1:]
+    return float(np.sum((1 - xi) ** 2 + 100.0 * (xnext - xi * xi) ** 2)) + noise
 
 
 def stochastic_ackley_function(x: np.ndarray) -> float:
@@ -71,16 +78,16 @@ def stochastic_ackley_function(x: np.ndarray) -> float:
         - float: The value of the Ackley function at the given position.
     """
     d = len(x)
-    sum_sq = np.sum(x**2)
-    sum_cos = np.sum(np.cos(2 * math.pi * x))
+    sum_sq = float(np.dot(x, x))
+    mean_cos = float(np.cos(2 * math.pi * x).mean())
 
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
 
     return (
-        -20 * math.exp(-0.2 * math.sqrt(sum_sq / d))
-        - math.exp(sum_cos / d)
-        + 20
+        -20.0 * math.exp(-0.2 * math.sqrt(sum_sq / d))
+        - math.exp(mean_cos)
+        + 20.0
         + math.e
         + noise
     )
@@ -114,7 +121,7 @@ def stochastic_drop_wave_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Drop-Wave function at the given position.
     """
-    quadratic_sum = np.sum([y**2 for y in x])
+    quadratic_sum = float(np.dot(x, x))
     numerator = 1 + math.cos(12 * math.sqrt(quadratic_sum))
     denominator = 0.5 * (quadratic_sum) + 2
 
@@ -182,13 +189,13 @@ def stochastic_weierstrass_function(x: np.ndarray) -> float:
     d = len(x)
 
     # Pre-calculate the powers of a and b
-    k_values = np.arange(21)
+    k_values = np.arange(21, dtype=float)
     a_powers = a**k_values  # [a^0, a^1, a^2, ..., a^20]
     b_powers = b**k_values  # [b^0, b^1, b^2, ..., b^20]
     # Calculate sum1 using vectorized operations
     # For each xi, calculate all the cos terms simultaneously
     x_expanded = x[:, np.newaxis] + 0.5  # Shape: (d, 1)
-    cos_args = 2 * math.pi * b_powers * x_expanded  # Broadcasting: (d, 21)
+    cos_args = 2.0 * math.pi * b_powers * x_expanded  # Broadcasting: (d, 21)
     cos_values = np.cos(cos_args)  # Shape: (d, 21)
     sum1 = float(np.sum(a_powers * cos_values))
 
@@ -210,13 +217,14 @@ def stochastic_griewank_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the Griewank's function at the given position.
     """
-    sum_sq = np.sum(x**2) / 4000
-    prod_cos = np.prod(np.cos(x / np.sqrt(np.arange(1, len(x) + 1))))
+    sum_sq = float(np.dot(x, x)) / 4000.0
+    idx = np.sqrt(np.arange(1, len(x) + 1, dtype=float))
+    prod_cos = float(np.prod(np.cos(x / idx)))
 
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
 
-    return sum_sq - prod_cos + 1 + noise  # type: ignore
+    return sum_sq - prod_cos + 1 + noise
 
 
 def stochastic_happy_cat_function(x: np.ndarray) -> float:
@@ -231,10 +239,9 @@ def stochastic_happy_cat_function(x: np.ndarray) -> float:
     **Returns**:
         - float: The value of the HappyCat function at the given position.
     """
-    sum_sq = np.sum(x**2)
-    additional_sum = sum(
-        (1 / (8 * (i + 1))) * (xi**2 - 1) ** 2 for i, xi in enumerate(x)
-    )
+    sum_sq = float(np.dot(x, x))
+    i = np.arange(1, len(x) + 1, dtype=float)
+    additional_sum = float(np.sum(((np.square(x) - 1.0) ** 2) / (8.0 * i)))
 
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
@@ -256,10 +263,9 @@ def stochastic_salomon_function(x: np.ndarray) -> float:
     # Gaussian noise with mean 0 and std deviation 0.1
     noise = random.gauss(0, 0.1)
 
-    sum_sq = np.sum(x**2)
-    return (
-        1 - math.cos(2 * math.pi * math.sqrt(sum_sq)) + 0.1 * math.sqrt(sum_sq) + noise
-    )
+    sum_sq = float(np.dot(x, x))
+    r = math.sqrt(sum_sq)
+    return 1.0 - math.cos(2.0 * math.pi * r) + 0.1 * r + noise
 
 
 # ========================================================= #
