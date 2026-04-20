@@ -1,5 +1,7 @@
 # Stochastic Diffusion Adaptive Optimization (SDAO)
 
+![](https://img.shields.io/badge/DOI-10.1007%2Fs44257--025--00054--1-009eff?style=for-the-badge&labelColor=black&logo=doi)
+
 ## Description
 
 The Stochastic Diffusion Adaptive Optimization (SDAO) is a stochastic optimization algorithm inspired by adaptive diffusion. This algorithm is used to solve optimization problems in high-dimensional search spaces. SDAO is compared against various state-of-the-art (SoA) optimization algorithms across different benchmark scenarios.
