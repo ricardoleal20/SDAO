@@ -1,6 +1,6 @@
 # Stochastic Diffusion Adaptive Optimization (SDAO)
 
-![](https://img.shields.io/badge/DOI-10.1007%2Fs44257--025--00054--1-009eff?style=for-the-badge&labelColor=black&logo=doi)
+![](https://img.shields.io/badge/DOI-10.1007%2Fs44257--025--00054--1-009eff?style=for-the-badge&labelColor=black&logo=doi&link=https%3A%2F%2Fdoi.org%2F10.1007%2Fs44257-025-00054-1)
 
 ## Description
 
