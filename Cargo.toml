@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 # For the numerical approach
 ndarray = "0.15"
-rand = "0.8"
+rand = "0.10"
 rayon = "1.5"
 num = "0.4.3"
 # For the serialization approach
