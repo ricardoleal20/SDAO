@@ -1,0 +1,36 @@
+version: 2
+updates:
+  # npm — the UI Summary app
+  - package-ecosystem: npm
+    directory: /ui_summary
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      build:
+        patterns: ["vite", "@vitejs/plugin-react", "tailwindcss", "@tailwindcss/vite", "typescript"]
+      fonts:
+        patterns: ["@fontsource*"]
+
+  # Python — the SDAO model (uv)
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Rust — the SDAO benchmarks
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
