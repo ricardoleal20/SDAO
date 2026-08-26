@@ -17,7 +17,7 @@ dependencies = [
     "statsmodels>=0.14.4",
     "jinja2>=3.1.6",
     "seaborn>=0.13.2",
-    "optuna>=4.4.0",
+    "optuna>=4.9.0",
     # Lower bounds that pull in patched, non-vulnerable releases of
     # transitive dependencies (Pillow, Mako, fonttools) flagged by Dependabot.
     "pillow>=12.3.0",
