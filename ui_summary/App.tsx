@@ -10,59 +10,10 @@ import { AdaptiveMechanics } from './components/AdaptiveMechanics';
 import { BenchmarkResults } from './components/BenchmarkResults';
 import { AblationStudy } from './components/AblationStudy';
 import { SDAOSimulator } from './components/SDAOSimulator';
-import { Reveal } from './components/Reveal';
 import {
-  Menu, X, Github, ExternalLink, ArrowRight, ArrowDown,
+  ArrowDown, Menu, X, BookOpen, Github, ExternalLink, Sparkles,
+  Award, ShieldCheck, Activity, Copy, Check, Globe2, FileText, Cpu
 } from 'lucide-react';
-
-const NAV_ITEMS = [
-  { id: 'simulator', label: 'Simulator' },
-  { id: 'theory', label: 'Theory' },
-  { id: 'mechanics', label: 'Engine' },
-  { id: 'results', label: 'Results' },
-  { id: 'ablation', label: 'Ablation' },
-];
-
-const HeroStats = [
-  { value: 'd = 500', label: 'SOCO11 large-scale scalability', sub: 'mean-square stable to 500 dimensions' },
-  { value: '38 / 38', label: 'CEC 2017 Wilcoxon wins', sub: 'statistically significant dominance' },
-  { value: 'p < 10⁻⁴⁰', label: 'One-way ANOVA power', sub: 'across 30 independent runs' },
-  { value: '10.7×', label: 'Lower error vs. SFS at d=100', sub: 'on stochastic benchmarks' },
-];
-
-const Bento = [
-  {
-    span: 'lg:col-span-3 lg:row-span-2',
-    kicker: 'Density-driven diffusion',
-    title: 'Escape every local basin',
-    body: 'A Fickian repulsion field (D_FL) pushes candidate solutions away from overcrowded optima, while Brownian noise keeps the swarm probing uncharted territory — the precise behaviour standard gradient descent cannot reproduce.',
-    accent: true,
-  },
-  {
-    span: 'lg:col-span-2',
-    kicker: 'Adaptive coefficients',
-    title: 'α(k), γ(k), D(k) self-tune',
-    body: 'Exponential decay of the learning rate, memory-driven intensification, and a dimension-aware diffusion cap regulate exploration-to-exploitation across the entire optimization horizon.',
-  },
-  {
-    span: 'lg:col-span-2',
-    kicker: 'Opposition-based learning',
-    title: 'OBL breaks stagnation',
-    body: 'Probabilistic reflection of the worst solutions under sustained stagnation — the ablation shows removing it inflates error by an order of magnitude.',
-  },
-  {
-    span: 'lg:col-span-2',
-    kicker: 'Convergence guarantee',
-    title: 'Mean-square stable',
-    body: 'One-sided Lipschitz dissipativity and a 1/(2n) variance ceiling give classical strong convergence of order 1/2 — proven, not empirical.',
-  },
-  {
-    span: 'lg:col-span-3',
-    kicker: 'Real-world & stochastic',
-    title: 'Noise is not an obstacle',
-    body: 'Benchmarked on six industrial decision problems and a stochastic suite with additive Gaussian noise, SDAO consistently outperforms eleven state-of-the-art metaheuristics where gradient methods diverge.',
-  },
-];
 
 const AuthorCard: React.FC = () => {
   const [copied, setCopied] = useState(false);
@@ -84,54 +35,62 @@ const AuthorCard: React.FC = () => {
   };
 
   return (
-    <Reveal className="mx-auto max-w-5xl">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 md:p-12 backdrop-blur-sm">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
-          <div className="md:col-span-5">
-            <span className="eyebrow">Corresponding author</span>
-            <h3 className="display mt-3 text-3xl md:text-4xl text-bone">Ricardo M. Leal Lopez</h3>
-            <p className="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-gold">Independent Researcher</p>
-            <p className="mt-5 text-sm leading-relaxed text-white/60">
-              Published in <strong className="text-white/80">Discover Analytics (2026) 4:6</strong> under a
-              Creative Commons Attribution 4.0 International License.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href="https://github.com/ricardoleal20/SDAO"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-bone px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-ink transition-transform hover:scale-[1.03]"
-              >
-                <Github size={15} /> Repository
-              </a>
-              <a
-                href="https://doi.org/10.1007/s44257-025-00054-1"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-bone transition-colors hover:border-gold hover:text-gold"
-              >
-                <ExternalLink size={15} /> Read paper
-              </a>
-            </div>
-          </div>
+    <div className="w-full bg-white rounded-2xl border border-stone-200 shadow-lg p-8 md:p-12 my-16">
+      <div className="text-center max-w-3xl mx-auto mb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-stone-100 text-stone-700 text-xs font-bold tracking-widest uppercase rounded-full mb-3 border border-stone-200">
+          <Award size={14} className="text-nobel-gold" /> AUTHOR & ATTRIBUTION
+        </div>
+        <h2 className="font-serif text-3xl md:text-4xl text-stone-900 mb-2">
+          Ricardo M. Leal Lopez
+        </h2>
+        <p className="text-sm font-bold text-nobel-gold tracking-widest uppercase">
+          Corresponding Author • Independent Researcher
+        </p>
+      </div>
 
-          <div className="md:col-span-7">
-            <div className="rounded-xl border border-white/10 bg-ink/60 p-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <span className="font-mono text-xs font-bold text-gold">BibTeX citation</span>
-                <button
-                  onClick={handleCopy}
-                  className="rounded-md border border-white/15 px-3 py-1 font-mono text-xs text-white/80 transition-colors hover:border-gold hover:text-gold"
-                >
-                  {copied ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-              <pre className="mt-4 overflow-x-auto whitespace-pre font-mono text-xs leading-relaxed text-white/70">{bibtex}</pre>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center border-t border-stone-200 pt-8">
+        <div className="md:col-span-5 space-y-4">
+          <h3 className="font-serif text-xl text-stone-900">Open Access Research</h3>
+          <p className="text-stone-600 text-sm leading-relaxed">
+            Published in <strong>Discover Analytics (2026) 4:6</strong> under a Creative Commons Attribution 4.0 International License. The algorithm consistently demonstrated competitive performance and significantly outperformed state-of-the-art methods in noisy and high-dimensional environments.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <a
+              href="https://github.com/ricardoleal20/SDAO"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-stone-800 transition-all flex items-center gap-2 shadow-sm cursor-pointer"
+            >
+              <Github size={16} /> GitHub Repository
+            </a>
+            <a
+              href="https://doi.org/10.1007/s44257-025-00054-1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 bg-white text-stone-800 border border-stone-300 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-stone-50 transition-all flex items-center gap-2 shadow-xs cursor-pointer"
+            >
+              <ExternalLink size={16} className="text-nobel-gold" /> Read Paper (DOI)
+            </a>
           </div>
         </div>
+
+        <div className="md:col-span-7 bg-stone-900 text-stone-300 p-6 rounded-xl border border-stone-800 relative group">
+          <div className="flex justify-between items-center mb-3 pb-2 border-b border-stone-800">
+            <span className="text-xs font-mono text-nobel-gold font-bold">BibTeX Citation</span>
+            <button
+              onClick={handleCopy}
+              className="px-3 py-1 bg-stone-800 hover:bg-stone-700 text-white rounded text-xs font-mono transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+              {copied ? 'Copied!' : 'Copy BibTeX'}
+            </button>
+          </div>
+          <pre className="text-xs font-mono text-stone-300 overflow-x-auto whitespace-pre leading-relaxed">
+            {bibtex}
+          </pre>
+        </div>
       </div>
-    </Reveal>
+    </div>
   );
 };
 
@@ -148,263 +107,217 @@ const App: React.FC = () => {
   const scrollToSection = (id: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     setMenuOpen(false);
-    const el = document.getElementById(id);
-    if (el) {
-      window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 84, behavior: 'smooth' });
+    const element = document.getElementById(id);
+    if (element) {
+      const headerOffset = 90;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
     }
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
-      {/* Navigation */}
-      <nav
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-          scrolled ? 'bg-ink/85 py-3 shadow-[0_1px_0_0_rgba(255,255,255,0.08)] backdrop-blur-xl' : 'bg-transparent py-6'
-        }`}
-      >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-baseline gap-2"
-          >
-            <span className="display text-xl text-bone">SDAO</span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">2026</span>
-          </button>
+    <div className="min-h-screen bg-[#F9F8F4] text-stone-800 selection:bg-nobel-gold selection:text-white">
 
-          <div className="hidden items-center gap-8 lg:flex">
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                onClick={scrollToSection(item.id)}
-                className="text-xs font-semibold uppercase tracking-[0.15em] text-white/55 transition-colors hover:text-bone"
-              >
-                {item.label}
-              </a>
-            ))}
+      {/* Navigation */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F9F8F4]/95 backdrop-blur-md shadow-sm py-3.5 border-b border-stone-200' : 'bg-transparent py-6'}`}>
+        <div className="container mx-auto px-6 flex justify-between items-center">
+          <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="flex flex-col">
+              <span className="font-serif font-bold text-lg tracking-wide text-stone-900 leading-tight">
+                SDAO <span className="font-sans text-xs text-nobel-gold font-semibold uppercase tracking-widest ml-1">2026</span>
+              </span>
+              <span className="text-[10px] text-stone-500 font-mono -mt-0.5">Stochastic Diffusion Adaptive Opt</span>
+            </div>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-7 text-xs font-bold tracking-widest text-stone-600 uppercase">
+            <a href="#simulator" onClick={scrollToSection('simulator')} className="hover:text-nobel-gold transition-colors cursor-pointer flex items-center gap-1">
+              <Activity size={14} className="text-nobel-gold" /> Live Simulator
+            </a>
+            <a href="#theory" onClick={scrollToSection('theory')} className="hover:text-nobel-gold transition-colors cursor-pointer">Theory & SDE</a>
+            <a href="#mechanics" onClick={scrollToSection('mechanics')} className="hover:text-nobel-gold transition-colors cursor-pointer">Adaptive Engine</a>
+            <a href="#results" onClick={scrollToSection('results')} className="hover:text-nobel-gold transition-colors cursor-pointer">Empirical Results</a>
+            <a href="#ablation" onClick={scrollToSection('ablation')} className="hover:text-nobel-gold transition-colors cursor-pointer">Ablation Study</a>
+            <a href="#author" onClick={scrollToSection('author')} className="hover:text-nobel-gold transition-colors cursor-pointer">Author</a>
+
             <a
               href="https://github.com/ricardoleal20/SDAO"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-xs font-bold uppercase tracking-wider text-bone transition-colors hover:border-gold hover:text-gold"
+              className="px-4 py-2 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer border border-stone-800"
             >
-              <Github size={14} /> GitHub
+              <Github size={14} /> GitHub Repo
             </a>
           </div>
 
-          <button
-            className="text-bone lg:hidden"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
+          <button className="lg:hidden text-stone-900 p-2 focus:outline-none" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu */}
       {menuOpen && (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-ink p-6">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              onClick={scrollToSection(item.id)}
-              className="display text-2xl text-bone"
-            >
-              {item.label}
-            </a>
-          ))}
+        <div className="fixed inset-0 z-40 bg-[#F9F8F4] flex flex-col items-center justify-center gap-6 text-lg font-serif animate-fade-in p-6">
+          <a href="#simulator" onClick={scrollToSection('simulator')} className="hover:text-nobel-gold transition-colors cursor-pointer uppercase">Live Simulator</a>
+          <a href="#theory" onClick={scrollToSection('theory')} className="hover:text-nobel-gold transition-colors cursor-pointer uppercase">Theory & SDE</a>
+          <a href="#mechanics" onClick={scrollToSection('mechanics')} className="hover:text-nobel-gold transition-colors cursor-pointer uppercase">Adaptive Engine</a>
+          <a href="#results" onClick={scrollToSection('results')} className="hover:text-nobel-gold transition-colors cursor-pointer uppercase">Empirical Results</a>
+          <a href="#ablation" onClick={scrollToSection('ablation')} className="hover:text-nobel-gold transition-colors cursor-pointer uppercase">Ablation Study</a>
+          <a href="#author" onClick={scrollToSection('author')} className="hover:text-nobel-gold transition-colors cursor-pointer uppercase">Author & Citation</a>
           <a
             href="https://github.com/ricardoleal20/SDAO"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMenuOpen(false)}
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-bone px-6 py-3 text-sm font-bold uppercase tracking-wider text-ink"
+            className="px-6 py-3 bg-stone-900 text-white rounded-full shadow-lg cursor-pointer flex items-center gap-2 mt-4 text-sm font-sans font-bold uppercase tracking-wider"
           >
-            <Github size={16} /> View repository
+            <Github size={18} /> View GitHub Repo
           </a>
         </div>
       )}
 
-      {/* Hero */}
-      <header className="grain relative flex min-h-screen items-center overflow-hidden px-6 pt-32 pb-20">
-        <div
-          className="pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-25 blur-[140px]"
-          style={{ background: 'radial-gradient(circle, var(--color-gold) 0%, transparent 70%)' }}
-        />
-        <div className="relative z-10 mx-auto max-w-6xl">
-          <Reveal className="mb-7">
-            <span className="inline-flex items-center gap-2.5 rounded-full border border-gold/40 bg-gold/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-gold-soft">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold" />
-              Discover Analytics (2026) 4:6 — Open Access
-            </span>
-          </Reveal>
+      {/* Header / Hero Banner */}
+      <header className="pt-32 pb-16 md:pt-40 md:pb-24 border-b border-stone-200 bg-gradient-to-b from-[#F9F8F4] via-[#F5F4F0] to-[#F9F8F4] relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-nobel-gold/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-          <Reveal delay={120}>
-            <h1 className="display max-w-6xl text-[clamp(2.75rem,7vw,6rem)] text-bone">
-              Stochastic Diffusion
-              <br />
-              Adaptive Optimization
-            </h1>
-          </Reveal>
+        <div className="container mx-auto px-6 relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 border border-nobel-gold text-nobel-gold text-xs tracking-[0.2em] uppercase font-bold rounded-full bg-white/70 shadow-xs">
+            <Sparkles size={14} className="text-nobel-gold animate-spin" /> Discover Analytics (2026) 4:6 • Open Access Research
+          </div>
 
-          <Reveal delay={240} className="mt-7 max-w-2xl">
-            <p className="font-serif text-xl italic leading-snug text-white/70 md:text-2xl">
-              A novel metaheuristic grounded in diffusion dynamics, Fick&rsquo;s second law, and stochastic modeling.
-            </p>
-          </Reveal>
+          <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-medium leading-[1.05] mb-6 text-stone-900 max-w-6xl mx-auto">
+            Stochastic Diffusion Adaptive Optimization
+          </h1>
 
-          <Reveal delay={360} className="mt-6 max-w-2xl">
-            <p className="text-base leading-relaxed text-white/55">
-              By replacing traditional gradient descent with a density-driven diffusion mechanism (D_FL), SDAO repels
-              candidate solutions from overcrowded local optima basins and conquers noisy, deceptive, and
-              high-dimensional search spaces up to d = 500.
-            </p>
-          </Reveal>
+          <p className="font-serif italic text-2xl md:text-3xl text-stone-600 mb-8 max-w-4xl mx-auto">
+            A novel metaheuristic grounded in diffusion dynamics, Fick's second law, and stochastic modeling.
+          </p>
 
-          <Reveal delay={480} className="mt-10 flex flex-wrap items-center gap-4">
+          <p className="max-w-3xl mx-auto text-base md:text-lg text-stone-700 font-light leading-relaxed mb-12">
+            By replacing traditional gradient descent with a density-driven diffusion mechanism (D_FL), SDAO repels candidate solutions from overcrowded local optima basins and conquers noisy, deceptive, and high-dimensional search spaces up to d = 500.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-4">
             <a
               href="#simulator"
               onClick={scrollToSection('simulator')}
-              className="inline-flex items-center gap-2 rounded-full bg-gold px-7 py-3.5 text-xs font-bold uppercase tracking-wider text-ink transition-transform hover:scale-[1.03]"
+              className="px-6 py-3.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 shadow-md cursor-pointer scale-105"
             >
-              Launch live simulator <ArrowRight size={15} />
+              <Activity size={16} className="text-nobel-gold" /> Launch Live Simulator
+            </a>
+            <a
+              href="https://github.com/ricardoleal20/SDAO"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3.5 bg-white hover:bg-stone-50 text-stone-900 border border-stone-300 rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 shadow-xs cursor-pointer"
+            >
+              <Github size={16} /> GitHub Code & Protocol
             </a>
             <a
               href="https://doi.org/10.1007/s44257-025-00054-1"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-7 py-3.5 text-xs font-bold uppercase tracking-wider text-bone transition-colors hover:border-gold hover:text-gold"
+              className="px-6 py-3.5 bg-white hover:bg-stone-50 text-stone-700 border border-stone-300 rounded-xl text-xs font-bold tracking-wider uppercase transition-all flex items-center gap-2 shadow-xs cursor-pointer"
             >
-              Read the paper <ExternalLink size={15} />
+              <ExternalLink size={16} className="text-nobel-gold" /> View Paper (DOI)
             </a>
-          </Reveal>
+          </div>
 
-          <a
-            href="#simulator"
-            onClick={scrollToSection('simulator')}
-            className="mt-20 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/40 transition-colors hover:text-gold"
-          >
-            <ArrowDown size={14} className="scroll-cue" /> Explore
-          </a>
+          {/* Key Metrics Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-16 pt-10 border-t border-stone-300/60">
+            <div className="bg-white/80 p-4 rounded-xl border border-stone-200/80 shadow-xs">
+              <div className="text-xs text-stone-500 font-bold uppercase tracking-wider">Benchmark Horizon</div>
+              <div className="text-2xl font-serif font-bold text-stone-900 mt-1">300 FEs</div>
+              <div className="text-[11px] text-stone-400 font-mono mt-0.5">30 Independent runs</div>
+            </div>
+            <div className="bg-white/80 p-4 rounded-xl border border-stone-200/80 shadow-xs">
+              <div className="text-xs text-stone-500 font-bold uppercase tracking-wider">High-d Scalability</div>
+              <div className="text-2xl font-serif font-bold text-nobel-gold mt-1">d = 500</div>
+              <div className="text-[11px] text-stone-400 font-mono mt-0.5">SOCO11 Large-Scale</div>
+            </div>
+            <div className="bg-white/80 p-4 rounded-xl border border-stone-200/80 shadow-xs">
+              <div className="text-xs text-stone-500 font-bold uppercase tracking-wider">Statistical Power</div>
+              <div className="text-2xl font-serif font-bold text-stone-900 mt-1">p &lt; 10⁻⁴⁰</div>
+              <div className="text-[11px] text-stone-400 font-mono mt-0.5">One-Way ANOVA</div>
+            </div>
+            <div className="bg-white/80 p-4 rounded-xl border-stone-200/80 shadow-xs">
+              <div className="text-xs text-stone-500 font-bold uppercase tracking-wider">Wilcoxon Wins</div>
+              <div className="text-2xl font-serif font-bold text-emerald-700 mt-1">38 / 38</div>
+              <div className="text-[11px] text-stone-400 font-mono mt-0.5">CEC 2017 Dominance</div>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Interest — hero metrics marquee */}
-      <section className="border-y border-white/10 bg-white/[0.02] py-5">
-        <div className="flex overflow-hidden">
-          <div className="marquee-track flex shrink-0 items-center gap-12 pr-12">
-            {[...HeroStats, ...HeroStats, ...HeroStats].map((s, i) => (
-              <span key={i} className="flex items-center gap-3 whitespace-nowrap">
-                <span className="display text-2xl text-gold">{s.value}</span>
-                <span className="text-xs font-semibold uppercase tracking-wider text-white/45">{s.label}</span>
-                <span className="text-white/15">/</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Interest — gapless bento */}
-      <section className="mx-auto max-w-7xl px-6 py-28 md:py-40">
-        <Reveal className="mb-16 max-w-3xl">
-          <span className="eyebrow">The mechanism</span>
-          <h2 className="display mt-4 text-4xl text-bone md:text-5xl">
-            Physics, not heuristics, drives the search.
-          </h2>
-        </Reveal>
-
-        <div className="grid grid-flow-dense grid-cols-1 gap-4 lg:grid-cols-6 lg:grid-rows-2">
-          {Bento.map((card, i) => (
-            <Reveal key={i} delay={i * 80} className={card.span}>
-              <article
-                className={`h-full rounded-2xl border p-7 transition-colors duration-500 hover:border-gold/40 ${
-                  card.accent
-                    ? 'border-gold/30 bg-gradient-to-br from-gold/10 to-transparent'
-                    : 'border-white/10 bg-white/[0.02]'
-                }`}
-              >
-                <span className="eyebrow">{card.kicker}</span>
-                <h3 className="display mt-3 text-2xl text-bone">{card.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-white/55">{card.body}</p>
-              </article>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* Desire — interactive content assembly */}
-      <main className="mx-auto max-w-7xl px-6">
-        <section id="hero-sim" className="py-16 md:py-24">
+      {/* Main Content Assembly */}
+      <main className="container mx-auto px-6">
+        {/* Interactive Hero Landscape Comparison */}
+        <section id="hero-sim">
           <HeroSimulation />
         </section>
-        <section id="simulator" className="py-16 md:py-24">
+
+        {/* Real-Time SDAO Optimizer Simulator */}
+        <section id="simulator">
           <SDAOSimulator />
         </section>
-        <section id="theory" className="py-16 md:py-24">
+
+        {/* Theoretical Foundations */}
+        <section id="theory">
           <TheoreticalFoundations />
         </section>
-        <section id="mechanics" className="py-16 md:py-24">
+
+        {/* Adaptive Methodology & OBL Mechanics */}
+        <section id="mechanics">
           <AdaptiveMechanics />
         </section>
-        <section id="results" className="py-16 md:py-24">
+
+        {/* Empirical Benchmarking Results */}
+        <section id="results">
           <BenchmarkResults />
         </section>
-        <section id="ablation" className="py-16 md:py-24">
+
+        {/* Ablation Study & Sensitivity */}
+        <section id="ablation">
           <AblationStudy />
         </section>
-        <section id="author" className="py-16 md:py-28">
+
+        {/* Author Showcase & BibTeX Citation */}
+        <section id="author">
           <AuthorCard />
         </section>
       </main>
 
-      {/* Action — footer */}
-      <footer className="border-t border-white/10 bg-ink px-6 py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-12 md:flex-row md:items-end md:justify-between">
-            <div className="max-w-xl">
-              <span className="eyebrow">Cite & build on it</span>
-              <h2 className="display mt-4 text-4xl text-bone md:text-5xl">
-                The code is open.
-                <br />
-                The proof is reproducible.
-              </h2>
-              <div className="mt-7 flex flex-wrap gap-4">
-                <a
-                  href="https://github.com/ricardoleal20/SDAO"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full bg-bone px-7 py-3.5 text-xs font-bold uppercase tracking-wider text-ink transition-transform hover:scale-[1.03]"
-                >
-                  <Github size={15} /> Clone the repository
-                </a>
-                <a
-                  href="https://doi.org/10.1007/s44257-025-00054-1"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-7 py-3.5 text-xs font-bold uppercase tracking-wider text-bone transition-colors hover:border-gold hover:text-gold"
-                >
-                  <ExternalLink size={15} /> Discover Analytics paper
-                </a>
-              </div>
+      {/* Footer */}
+      <footer className="bg-stone-900 text-stone-400 py-16 border-t border-stone-800 mt-20">
+        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="text-center md:text-left space-y-2">
+            <div className="flex items-center justify-center md:justify-start gap-2 text-white font-serif font-bold text-2xl">
+              SDAO Metaheuristic
             </div>
-            <div className="flex gap-16">
-              <div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">Authors</span>
-                <p className="mt-3 text-sm text-white/70">Ricardo M. Leal Lopez</p>
-              </div>
-              <div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">License</span>
-                <p className="mt-3 text-sm text-white/70">CC-BY 4.0</p>
-              </div>
-            </div>
+            <p className="text-xs text-stone-400">
+              Interactive web representation of "Stochastic diffusion adaptive optimization, a novel metaheuristic approach" by Ricardo M. Leal Lopez (2026).
+            </p>
           </div>
 
-          <div className="mt-16 flex flex-col gap-3 border-t border-white/10 pt-8 text-xs text-white/35 md:flex-row md:items-center md:justify-between">
-            <span className="display text-base text-white/60">SDAO — Stochastic Diffusion Adaptive Optimization</span>
-            <span>&copy; 2026 The Author(s). Licensed under Creative Commons Attribution 4.0 International (CC-BY 4.0).</span>
+          <div className="flex flex-wrap justify-center gap-6 text-xs font-bold text-stone-300 uppercase tracking-wider">
+            <a href="https://github.com/ricardoleal20/SDAO" target="_blank" rel="noopener noreferrer" className="hover:text-nobel-gold transition-colors flex items-center gap-1.5">
+              <Github size={14} /> GitHub Repository
+            </a>
+            <a href="https://doi.org/10.1007/s44257-025-00054-1" target="_blank" rel="noopener noreferrer" className="hover:text-nobel-gold transition-colors flex items-center gap-1.5">
+              <ExternalLink size={14} /> Discover Analytics Paper
+            </a>
           </div>
+        </div>
+
+        <div className="container mx-auto px-6 mt-12 pt-8 border-t border-stone-800 text-center text-xs text-stone-500">
+          © 2026 The Author(s). Licensed under Creative Commons Attribution 4.0 International License (CC-BY 4.0).
         </div>
       </footer>
     </div>

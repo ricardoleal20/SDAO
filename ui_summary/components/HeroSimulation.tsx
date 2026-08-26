@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, FastForward, Activity, Layers, Sparkles, Zap, Minimize2, CheckCircle2 } from 'lucide-react';
-import { Reveal } from './Reveal';
 
 interface Particle2D {
   id: number;
@@ -42,7 +41,7 @@ export const HeroSimulation: React.FC = () => {
     const well2 = 35 * Math.exp(-0.9 * (Math.pow(x - 2.2, 2) + Math.pow(y, 2)));
     const barrier = 12 * Math.exp(-1.5 * Math.pow(x, 2));
     const base = 0.5 * (Math.pow(x, 2) * 0.1 + Math.pow(y, 2) * 0.4);
-    
+
     // Invert wells so they are minima
     return Math.max(0.01, 35 - well1 - well2 + barrier + base);
   };
@@ -231,17 +230,16 @@ export const HeroSimulation: React.FC = () => {
         // Normalize color map
         const norm = Math.min(1, Math.max(0, val / 30));
 
-        // Dark terrain: deep ink base lifting toward warm ridge
-        let red = Math.floor(14 + norm * 40);
-        let green = Math.floor(14 + norm * 28);
-        let blue = Math.floor(16 + norm * 12);
+        let red = Math.floor(248 - norm * 60);
+        let green = Math.floor(246 - norm * 80);
+        let blue = Math.floor(240 - norm * 110);
 
         if (wx < -0.8 && norm < 0.6) {
-          // Left well (Local optimum trap - amber warning zone)
-          red = 70 + Math.floor(norm * 60); green = 48 - Math.floor(norm * 20); blue = 24;
+          // Left well (Local optimum trap - yellowish amber warning zone)
+          red = 254; green = 243 - Math.floor(norm * 100); blue = 199;
         } else if (wx > 0.8 && norm < 0.4) {
           // Right well (Global optimum basin - emerald target zone)
-          red = 18; green = 70 - Math.floor(norm * 30); blue = 56;
+          red = 209; green = 250 - Math.floor(norm * 120); blue = 229;
         }
 
         ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
@@ -253,7 +251,7 @@ export const HeroSimulation: React.FC = () => {
     // Left well center approx x = -2, y = 0
     const leftX = ((-2.0 + 4.0) / 8.0) * width;
     const leftY = ((0 + 2.6) / 5.2) * height;
-    ctx.strokeStyle = 'rgba(217, 153, 80, 0.55)';
+    ctx.strokeStyle = 'rgba(217, 119, 6, 0.4)';
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
@@ -263,7 +261,7 @@ export const HeroSimulation: React.FC = () => {
     // Right well center approx x = 2.2, y = 0
     const rightX = ((2.2 + 4.0) / 8.0) * width;
     const rightY = ((0 + 2.6) / 5.2) * height;
-    ctx.strokeStyle = 'rgba(52, 211, 153, 0.6)';
+    ctx.strokeStyle = 'rgba(5, 150, 105, 0.5)';
     ctx.beginPath();
     ctx.arc(rightX, rightY, 70, 0, Math.PI * 2);
     ctx.stroke();
@@ -276,7 +274,7 @@ export const HeroSimulation: React.FC = () => {
 
       // OBL jump flash effect
       if (p.isOBL) {
-        ctx.strokeStyle = '#d8b978';
+        ctx.strokeStyle = '#C5A059';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(px, py, 12, 0, Math.PI * 2);
@@ -285,9 +283,9 @@ export const HeroSimulation: React.FC = () => {
 
       ctx.beginPath();
       ctx.arc(px, py, 5, 0, Math.PI * 2);
-      ctx.fillStyle = mode === 'SDAO' ? (p.x > 0 ? '#34d399' : '#d8b978') : '#f87171';
+      ctx.fillStyle = mode === 'SDAO' ? (p.x > 0 ? '#059669' : '#C5A059') : '#DC2626';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(246,244,238,0.9)';
+      ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1.5;
       ctx.stroke();
     });
@@ -298,9 +296,9 @@ export const HeroSimulation: React.FC = () => {
       const gby = ((globalBestRef.current.y + 2.6) / 5.2) * height;
       ctx.beginPath();
       ctx.arc(gbx, gby, 9, 0, Math.PI * 2);
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = '#10B981';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(246,244,238,0.95)';
+      ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 2.5;
       ctx.stroke();
     }
@@ -308,73 +306,90 @@ export const HeroSimulation: React.FC = () => {
   }, [stepCount, mode]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
-      <Reveal className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="w-full max-w-6xl mx-auto my-6 sm:my-12 p-4 sm:p-6 md:p-10 bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xl">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 mb-6 sm:mb-8 pb-5 sm:pb-6 border-b border-stone-200">
         <div>
-          <span className="eyebrow">Core mechanism</span>
-          <h2 className="display mt-3 text-3xl text-bone md:text-4xl">
-            Escaping deceptive optima: SDAO vs. gradient descent
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-stone-100 text-stone-700 text-xs font-bold tracking-widest uppercase rounded-full mb-3">
+            <Sparkles size={14} className="text-nobel-gold" /> CORE MECHANISM SHOWCASE
+          </div>
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-stone-900">
+            Escaping Deceptive Optima: SDAO vs. Gradient Descent
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">
-            Forty-five candidate solutions start trapped in a deceptive local minimum (left well). Classical gradient
-            descent stays stuck forever; SDAO&rsquo;s density repulsion and opposition-based learning catapult the swarm
-            into the true global optimum (right well).
+          <p className="text-stone-600 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            Watch 45 candidate solutions initialized in a deceptive local minimum (left well). While classical gradient descent remains permanently trapped, SDAO's density repulsion and OBL catapult the swarm into the true global optimum (right well).
           </p>
         </div>
 
-        <div className="flex w-full shrink-0 gap-1.5 rounded-full border border-white/10 bg-white/[0.03] p-1.5 sm:w-auto">
+        {/* Mode Selector */}
+        <div className="flex bg-stone-100 p-1.5 rounded-2xl border border-stone-200 w-full sm:w-auto shrink-0">
           <button
             onClick={() => { setMode('SDAO'); initParticles(); }}
-            className={`flex-1 rounded-full px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all sm:flex-none ${
-              mode === 'SDAO' ? 'bg-gold text-ink' : 'text-white/55 hover:text-bone'
+            className={`flex-1 sm:flex-none px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[11px] sm:text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+              mode === 'SDAO' ? 'bg-stone-900 text-white shadow-md' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            SDAO (Fickian)
+            <Zap size={14} className={mode === 'SDAO' ? 'text-nobel-gold' : ''} /> SDAO (Fickian)
           </button>
           <button
             onClick={() => { setMode('SGD'); initParticles(); }}
-            className={`flex-1 rounded-full px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all sm:flex-none ${
-              mode === 'SGD' ? 'bg-red-500 text-white' : 'text-white/55 hover:text-bone'
+            className={`flex-1 sm:flex-none px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[11px] sm:text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+              mode === 'SGD' ? 'bg-red-600 text-white shadow-md' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             Classical SGD
           </button>
         </div>
-      </Reveal>
+      </div>
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <div className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] lg:col-span-7">
-          <div className="relative aspect-[4/3] min-h-[260px] w-full sm:aspect-[16/11] sm:min-h-[340px]">
-            <canvas ref={canvasRef} width={640} height={440} className="block h-full w-full" />
-            <div className="pointer-events-none absolute left-2 right-2 top-2 flex items-center justify-between gap-2 sm:left-3.5 sm:top-3.5 sm:right-3.5">
-              <div className="flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-bold text-amber-200 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-xs">
-                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-400" />
-                Local trap (f &asymp; 15.0)
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+        {/* Canvas Visualizer Card */}
+        <div className="lg:col-span-7 flex flex-col rounded-2xl overflow-hidden border border-stone-300 shadow-sm bg-[#F9F8F4]">
+          {/* Viewport */}
+          <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] min-h-[260px] sm:min-h-[340px]">
+            <canvas
+              ref={canvasRef}
+              width={640}
+              height={440}
+              className="w-full h-full block"
+            />
+
+            {/* Top Badges */}
+            <div className="absolute top-2 left-2 right-2 sm:top-3.5 sm:left-3.5 sm:right-3.5 flex justify-between items-center gap-2 pointer-events-none">
+              <div className="bg-amber-100/90 backdrop-blur-md border border-amber-300 text-amber-900 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-amber-500 inline-block animate-pulse shrink-0"></span>
+                <span>Local Trap <span className="hidden xs:inline">(f ≈ 15.0)</span></span>
               </div>
-              <div className="flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-[10px] font-bold text-emerald-200 backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-xs">
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-                Global basin (f &asymp; 0.05)
+
+              <div className="bg-emerald-100/90 backdrop-blur-md border border-emerald-300 text-emerald-900 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-600 inline-block shrink-0"></span>
+                <span>Global Basin <span className="hidden xs:inline">(f ≈ 0.05)</span></span>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-3.5 py-3 text-xs sm:px-5 sm:py-3.5">
-            <div className="flex items-center gap-3 font-mono text-[11px] text-white/50 sm:gap-5 sm:text-xs">
-              <span>Step: <strong className="font-bold text-bone">{stepCount}/250</strong></span>
-              <span>Best f(x): <strong className="font-bold text-emerald-300">{globalBestVal.toFixed(3)}</strong></span>
+          {/* Controls & Metrics Toolbar */}
+          <div className="bg-white px-3.5 py-3 sm:px-5 sm:py-3.5 border-t border-stone-200 flex flex-wrap justify-between items-center gap-3 text-xs">
+            <div className="flex items-center gap-3 sm:gap-5">
+              <span className="font-mono text-stone-500 text-[11px] sm:text-xs">
+                Step: <strong className="text-stone-900 font-bold">{stepCount}/250</strong>
+              </span>
+              <span className="font-mono text-stone-500 text-[11px] sm:text-xs">
+                Best f(x): <strong className="text-emerald-700 font-bold">{globalBestVal.toFixed(3)}</strong>
+              </span>
             </div>
-            <div className="ml-auto flex items-center gap-2 sm:ml-0">
+
+            <div className="flex items-center gap-2 ml-auto sm:ml-0">
               <button
                 onClick={() => setIsRunning(!isRunning)}
-                className="flex items-center gap-1.5 rounded-lg bg-bone px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-ink transition-transform hover:scale-[1.03] sm:text-xs"
+                className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg font-bold text-[11px] sm:text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {isRunning ? <Pause size={13} /> : <Play size={13} />}
                 {isRunning ? 'Pause' : 'Resume'}
               </button>
               <button
                 onClick={initParticles}
+                className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 rounded-lg font-bold text-[11px] sm:text-xs transition-colors flex items-center gap-1 cursor-pointer"
                 title="Reset Simulation"
-                className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-bold text-white/70 transition-colors hover:border-gold hover:text-gold sm:text-xs"
               >
                 <RotateCcw size={13} /> Reset
               </button>
@@ -382,57 +397,75 @@ export const HeroSimulation: React.FC = () => {
           </div>
         </div>
 
-        <div className="space-y-6 lg:col-span-5">
-          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gold">Swarm telemetry</span>
-              <span className="font-mono text-xs text-white/40">N = 45</span>
+        {/* Real-time Diagnostics & Explanations */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-stone-900 text-white p-6 rounded-2xl border border-stone-800 space-y-4">
+            <div className="flex justify-between items-center border-b border-stone-800 pb-3">
+              <span className="text-xs font-bold tracking-widest text-nobel-gold uppercase">SWARM TELEMETRY</span>
+              <span className="text-xs font-mono text-stone-400">N = 45 particles</span>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
-                <div className="font-mono text-[11px] uppercase text-white/45">Trapped</div>
-                <div className={`mt-1 display text-2xl font-bold ${trappedCount > 20 ? 'text-amber-300' : 'text-emerald-300'}`}>
-                  {trappedCount} <span className="font-sans text-xs font-normal text-white/40">/ 45</span>
+              <div className="bg-stone-800 p-3.5 rounded-xl border border-stone-700">
+                <div className="text-[11px] text-stone-400 uppercase font-mono">Trapped in Local Well</div>
+                <div className={`text-2xl font-serif font-bold mt-1 ${trappedCount > 20 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  {trappedCount} <span className="text-xs font-sans font-normal text-stone-400">/ 45</span>
                 </div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
-                <div className="font-mono text-[11px] uppercase text-white/45">Escaped</div>
-                <div className={`mt-1 display text-2xl font-bold ${45 - trappedCount > 20 ? 'text-emerald-300' : 'text-white/50'}`}>
-                  {45 - trappedCount} <span className="font-sans text-xs font-normal text-white/40">/ 45</span>
+              <div className="bg-stone-800 p-3.5 rounded-xl border border-stone-700">
+                <div className="text-[11px] text-stone-400 uppercase font-mono">Escaped to Global Well</div>
+                <div className={`text-2xl font-serif font-bold mt-1 ${45 - trappedCount > 20 ? 'text-emerald-400' : 'text-stone-400'}`}>
+                  {45 - trappedCount} <span className="text-xs font-sans font-normal text-stone-400">/ 45</span>
                 </div>
               </div>
             </div>
+
             {mode === 'SDAO' && (
               <div className="grid grid-cols-2 gap-4 pt-1">
-                <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                  <span className="text-xs text-white/55">Diffusion D(k)</span>
-                  <span className="font-mono font-bold text-gold">{diffusionCap}</span>
+                <div className="bg-stone-800/80 p-3 rounded-lg border border-stone-700/60 flex justify-between items-center">
+                  <span className="text-xs text-stone-300">Diffusion D(k):</span>
+                  <span className="font-mono font-bold text-nobel-gold">{diffusionCap}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] p-3">
-                  <span className="text-xs text-white/55">OBL reflections</span>
-                  <span className="font-mono font-bold text-emerald-300">{oblEvents}</span>
+                <div className="bg-stone-800/80 p-3 rounded-lg border border-stone-700/60 flex justify-between items-center">
+                  <span className="text-xs text-stone-300">OBL Reflections:</span>
+                  <span className="font-mono font-bold text-emerald-400">{oblEvents}</span>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-            <h3 className="display flex items-center gap-2 text-xl text-bone">
+          <div className="p-6 rounded-2xl border transition-all bg-[#F9F8F4] border-stone-300 space-y-3">
+            <h3 className="font-serif text-xl text-stone-900 flex items-center gap-2">
               {mode === 'SDAO' ? (
-                <><CheckCircle2 size={20} className="text-emerald-400" /><span>Why SDAO succeeds</span></>
+                <>
+                  <CheckCircle2 size={20} className="text-emerald-600" />
+                  <span>Why SDAO Succeeds</span>
+                </>
               ) : (
-                <><Activity size={20} className="text-red-400" /><span>Why gradient descent fails</span></>
+                <>
+                  <Activity size={20} className="text-red-600" />
+                  <span>Why Gradient Descent Fails</span>
+                </>
               )}
             </h3>
+
             {mode === 'SDAO' ? (
-              <div className="space-y-2.5 text-xs leading-relaxed text-white/55">
-                <p><strong className="text-white/80">Fick&rsquo;s 2nd law active:</strong> Overcrowding in the left trap creates a repulsive force vector D_FL(x&#7522;) away from the cluster centroid, forcing particles over the barrier into the right well.</p>
-                <p><strong className="text-white/80">Opposition-based learning (OBL):</strong> Particles that remain stagnant trigger an opposition jump across the origin (gold rings), landing directly in the global attraction basin.</p>
+              <div className="space-y-2.5 text-xs text-stone-700 leading-relaxed">
+                <p>
+                  <strong>Fick's 2nd Law Active:</strong> Overcrowding in the left trap creates a repulsive force vector D_FL(xᵢ) away from the cluster centroid, forcing particles over the barrier into the right well.
+                </p>
+                <p>
+                  <strong>Opposition-Based Learning (OBL):</strong> Particles that remain stagnant in the left well trigger an opposition jump across the origin (gold flashing rings), directly landing in the global attraction basin.
+                </p>
               </div>
             ) : (
-              <div className="space-y-2.5 text-xs leading-relaxed text-white/55">
-                <p><strong className="text-white/80">Zero gradient stagnation:</strong> At the bottom of the left well the local gradient is zero (&nabla;f &asymp; 0). Gradient descent relies on local slope, making escape impossible without external energy.</p>
-                <p><strong className="text-white/80">Premature convergence:</strong> All 45 particles collapse permanently into the false minimum (f &asymp; 15.0), missing the true global solution (f &asymp; 0.05).</p>
+              <div className="space-y-2.5 text-xs text-stone-700 leading-relaxed">
+                <p>
+                  <strong>Zero Gradient Stagnation:</strong> In the bottom of the left well, the local gradient is zero (∇f ≈ 0). Gradient descent relies entirely on local slope, making escape mathematically impossible without external energy.
+                </p>
+                <p>
+                  <strong>Premature Convergence:</strong> All 45 particles permanently collapse into the false minimum (f ≈ 15.0), missing the true global solution (f ≈ 0.05).
+                </p>
               </div>
             )}
           </div>

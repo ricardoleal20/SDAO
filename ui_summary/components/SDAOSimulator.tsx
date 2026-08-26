@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, FastForward, Sliders, Activity, Sparkles, AlertCircle, ShieldAlert, Cpu } from 'lucide-react';
-import { Reveal } from './Reveal';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { BENCHMARK_FUNCTIONS, evaluateFunction2D } from '../data/sdaoData';
 import { Particle, IterationMetric, AlgorithmId } from '../types';
@@ -297,15 +296,16 @@ export const SDAOSimulator: React.FC = () => {
         const maxVal = selectedFuncId === 'schwefel' ? 800 : selectedFuncId === 'rosenbrock' ? 500 : 50;
         const norm = Math.max(0, Math.min(1, val / maxVal));
 
-        // Dark terrain: ink base lifting toward warm ridge; emerald basin
-        let r = Math.floor(12 + norm * 55);
-        let g = Math.floor(12 + norm * 35);
-        let b = Math.floor(15 + norm * 15);
+        // Color map from low (green/gold) to high (stone/cream)
+        let r = Math.floor(249 - norm * 70);
+        let g = Math.floor(248 - norm * 90);
+        let b = Math.floor(244 - norm * 120);
 
         if (norm < 0.1) {
-          r = 16 + Math.floor(norm * 60);
-          g = 90 - Math.floor(norm * 120);
-          b = 70;
+          // Deep optimum basin
+          r = 16 + Math.floor(norm * 100);
+          g = 185 - Math.floor(norm * 200);
+          b = 129;
         }
 
         ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
@@ -321,7 +321,7 @@ export const SDAOSimulator: React.FC = () => {
       const bw = ((curMax - curMin) / (maxOrig - minOrig)) * width;
       const bh = ((curMax - curMin) / (maxOrig - minOrig)) * height;
 
-      ctx.strokeStyle = '#b8924a';
+      ctx.strokeStyle = '#047857';
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
       ctx.strokeRect(bx1, by1, bw, bh);
@@ -335,7 +335,7 @@ export const SDAOSimulator: React.FC = () => {
 
       // Draw density repulsion vector if active
       if (selectedAlgo === 'SDAO' && (Math.abs(p.densityGradient[0]) > 0.1 || Math.abs(p.densityGradient[1]) > 0.1)) {
-        ctx.strokeStyle = 'rgba(216, 185, 120, 0.75)';
+        ctx.strokeStyle = 'rgba(197, 160, 89, 0.7)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(px, py);
@@ -346,9 +346,9 @@ export const SDAOSimulator: React.FC = () => {
       // Particle dot
       ctx.beginPath();
       ctx.arc(px, py, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = selectedAlgo === 'SDAO' ? '#d8b978' : '#94a3b8';
+      ctx.fillStyle = selectedAlgo === 'SDAO' ? '#C5A059' : '#374151';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(246,244,238,0.85)';
+      ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 1;
       ctx.stroke();
     });
@@ -358,7 +358,7 @@ export const SDAOSimulator: React.FC = () => {
     const gby = ((globalBestPos[1] - minOrig) / (maxOrig - minOrig)) * height;
     ctx.beginPath();
     ctx.arc(gbx, gby, 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#34d399';
+    ctx.fillStyle = '#059669';
     ctx.fill();
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 2.5;
@@ -367,14 +367,20 @@ export const SDAOSimulator: React.FC = () => {
   }, [iteration, selectedFuncId, selectedAlgo]);
 
   return (
-    <Reveal className="w-full my-16">
-      <div className="mx-auto mb-16 max-w-3xl">
-        <span className="eyebrow">Interactive optimizer</span>
-        <h2 className="display mt-4 text-4xl text-bone md:text-5xl">Tune it, run it, watch the swarm converge</h2>
-        <p className="mt-5 text-lg font-light leading-relaxed text-white/55">Test SDAO against classical gradient descent and state-of-the-art swarms across benchmark landscapes with customizable noise and adaptive parameter controls.</p>
+    <div className="w-full my-16" id="simulator">
+      <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-stone-100 text-stone-700 text-xs font-bold tracking-widest uppercase rounded-full mb-4 border border-stone-200">
+          <Cpu size={14} className="text-nobel-gold" /> SECTION: INTERACTIVE SDAO OPTIMIZER
+        </div>
+        <h2 className="font-serif text-4xl md:text-5xl text-stone-900 mb-4">
+          Real-Time SDAO Optimizer
+        </h2>
+        <p className="text-lg text-stone-600 font-light leading-relaxed">
+          Test SDAO against classical gradient descent and state-of-the-art swarms across benchmark landscapes with customizable noise and adaptive parameter controls.
+        </p>
       </div>
 
-      <div className="bg-white/[0.03] rounded-2xl border border-white/10 shadow-xl overflow-hidden p-6 md:p-8">
+      <div className="bg-white rounded-2xl border border-stone-200 shadow-xl overflow-hidden p-6 md:p-8">
         {/* Top Control Bar */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-6 mb-6 border-b border-white/10">
           <div>
@@ -382,7 +388,7 @@ export const SDAOSimulator: React.FC = () => {
             <select
               value={selectedFuncId}
               onChange={(e) => setSelectedFuncId(e.target.value)}
-              className="w-full bg-white/[0.03] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm font-bold text-bone focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer"
+              className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-nobel-gold cursor-pointer"
             >
               {BENCHMARK_FUNCTIONS.map(f => (
                 <option key={f.id} value={f.id}>{f.name} ({f.modality})</option>
@@ -395,7 +401,7 @@ export const SDAOSimulator: React.FC = () => {
             <select
               value={selectedAlgo}
               onChange={(e) => setSelectedAlgo(e.target.value as any)}
-              className="w-full bg-white/[0.03] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm font-bold text-bone focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer"
+              className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-nobel-gold cursor-pointer"
             >
               <option value="SDAO">⚡ SDAO (Proposed Adaptive Engine)</option>
               <option value="SHADEwithILS">SHADE with ILS</option>
@@ -407,7 +413,7 @@ export const SDAOSimulator: React.FC = () => {
 
           <div>
             <label className="block text-xs font-bold text-white/45 uppercase tracking-wider mb-1.5">
-              Stochastic Noise σ²: <span className="text-gold font-mono">{noiseVar > 0 ? `Active (σ=${noiseVar})` : 'None'}</span>
+              Stochastic Noise σ²: <span className="text-nobel-gold font-mono">{noiseVar > 0 ? `Active (σ=${noiseVar})` : 'None'}</span>
             </label>
             <div className="flex gap-1.5">
               {[0, 0.5, 2.0].map(v => (
@@ -415,7 +421,7 @@ export const SDAOSimulator: React.FC = () => {
                   key={v}
                   onClick={() => setNoiseVar(v)}
                   className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
-                    noiseVar === v ? 'bg-white/[0.04] text-white' : 'bg-white/[0.04] text-white/60 hover:bg-white/[0.08]'
+                    noiseVar === v ? 'bg-stone-900 text-white shadow-xs' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                   }`}
                 >
                   {v === 0 ? 'Clean' : v === 0.5 ? 'Mild σ' : 'High σ'}
@@ -427,14 +433,14 @@ export const SDAOSimulator: React.FC = () => {
           <div className="flex items-end gap-2">
             <button
               onClick={() => setIsRunning(!isRunning)}
-              className="flex-1 py-2.5 px-4 bg-white/[0.04] hover:bg-white/[0.05] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2  cursor-pointer"
+              className="flex-1 py-2.5 px-4 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer"
             >
               {isRunning ? <Pause size={16} /> : <Play size={16} />}
               {isRunning ? 'Pause' : 'Run'}
             </button>
             <button
               onClick={initSimulation}
-              className="py-2.5 px-3 bg-white/[0.04] hover:bg-white/[0.08] text-bone border border-white/15 rounded-xl text-xs font-bold transition-colors flex items-center justify-center cursor-pointer"
+              className="py-2.5 px-3 bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center cursor-pointer"
               title="Reset Swarm"
             >
               <RotateCcw size={16} />
@@ -442,7 +448,7 @@ export const SDAOSimulator: React.FC = () => {
             <button
               onClick={stepIteration}
               disabled={isRunning}
-              className="py-2.5 px-3 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-50 text-bone border border-white/15 rounded-xl text-xs font-bold transition-colors flex items-center justify-center cursor-pointer"
+              className="py-2.5 px-3 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center cursor-pointer"
               title="Step 1 Iteration"
             >
               <FastForward size={16} />
@@ -455,26 +461,26 @@ export const SDAOSimulator: React.FC = () => {
           {/* Canvas Landscape */}
           <div className="lg:col-span-6 space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="display text-lg font-bold text-bone flex items-center gap-2">
+              <h3 className="font-serif text-lg font-bold text-stone-900 flex items-center gap-2">
                 <span>2D Landscape & Swarm Trajectories</span>
-                <span className="text-[11px] font-sans font-bold px-2 py-0.5 rounded bg-white/[0.04] text-white/60">
+                <span className="text-[11px] font-sans font-bold px-2 py-0.5 rounded bg-stone-100 text-stone-600">
                   {currentFunc.searchSpace}
                 </span>
               </h3>
             </div>
 
-            <div className="relative rounded-xl overflow-hidden border border-white/10 bg-ink aspect-square flex items-center justify-center">
+            <div className="relative rounded-xl overflow-hidden border border-stone-300 bg-[#F9F8F4] aspect-square flex items-center justify-center">
               <canvas
                 ref={canvasRef}
                 width={450}
                 height={450}
                 className="w-full h-full block cursor-crosshair"
               />
-              <div className="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 bg-ink/85 backdrop-blur-md px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-white/10  flex flex-wrap justify-between items-center text-[10px] sm:text-xs font-medium text-white/70 gap-1.5">
+              <div className="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 bg-white/95 backdrop-blur-md px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-stone-200 shadow-xs flex flex-wrap justify-between items-center text-[10px] sm:text-xs font-medium text-stone-700 gap-1.5">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#34d399] inline-block"></span> Global Best</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#d8b978] inline-block"></span> Particle</span>
-                  {selectedAlgo === 'SDAO' && <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gold inline-block"></span> Repulsion</span>}
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#059669] inline-block"></span> Global Best</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#C5A059] inline-block"></span> Particle</span>
+                  {selectedAlgo === 'SDAO' && <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-nobel-gold inline-block"></span> Repulsion</span>}
                 </div>
                 <div className="font-mono font-bold text-white/45 ml-auto">Iter: {iteration}/300</div>
               </div>
@@ -484,7 +490,7 @@ export const SDAOSimulator: React.FC = () => {
           {/* Real-time Graph & Diagnostic Cards */}
           <div className="lg:col-span-6 space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="display text-lg font-bold text-bone">
+              <h3 className="font-serif text-lg font-bold text-stone-900">
                 Live Convergence Curve & Adaptive Diagnostics
               </h3>
               <span className="text-xs font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
@@ -493,44 +499,44 @@ export const SDAOSimulator: React.FC = () => {
             </div>
 
             {/* Recharts Chart */}
-            <div className="h-64 w-full bg-white/[0.03] p-4 rounded-xl border border-white/10 ">
+            <div className="h-64 w-full bg-stone-50 p-4 rounded-xl border border-stone-200 shadow-xs">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={history} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="iteration" stroke="rgba(255,255,255,0.4)" fontSize={11} />
-                  <YAxis scale="log" domain={[0.0001, 'auto']} allowDataOverflow={false} stroke="rgba(255,255,255,0.4)" fontSize={11} width={55} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="iteration" stroke="#6B7280" fontSize={11} />
+                  <YAxis scale="log" domain={[0.0001, 'auto']} allowDataOverflow={false} stroke="#6B7280" fontSize={11} width={55} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0a0a0a', color: '#f6f4ee', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', fontSize: '12px' }}
+                    contentStyle={{ backgroundColor: '#1F2937', color: '#FFF', borderRadius: '8px', border: 'none', fontSize: '12px' }}
                     labelFormatter={(label) => `Iteration: #${label}`}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Line type="monotone" name="Best Value f(x)" dataKey="bestValue" stroke="#b8924a" strokeWidth={2.5} dot={false} isAnimationActive={false} />
-                  <Line type="monotone" name="Swarm Average" dataKey="avgValue" stroke="rgba(255,255,255,0.45)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+                  <Line type="monotone" name="Best Value f(x)" dataKey="bestValue" stroke="#C5A059" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+                  <Line type="monotone" name="Swarm Average" dataKey="avgValue" stroke="#6B7280" strokeWidth={1.5} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
             {/* Diagnostic Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/10 text-center">
+              <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 text-center">
                 <div className="text-[11px] text-white/45 uppercase font-bold">Step Size α(k)</div>
-                <div className="text-lg font-mono font-bold text-bone mt-1">
+                <div className="text-lg font-mono font-bold text-stone-900 mt-1">
                   {history.length > 0 ? history[history.length - 1].alpha : alpha0}
                 </div>
               </div>
-              <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/10 text-center">
+              <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 text-center">
                 <div className="text-[11px] text-white/45 uppercase font-bold">Memory γ(k)</div>
-                <div className="text-lg font-mono font-bold text-gold mt-1">
+                <div className="text-lg font-mono font-bold text-nobel-gold mt-1">
                   {history.length > 0 ? history[history.length - 1].gamma : gamma0}
                 </div>
               </div>
-              <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/10 text-center">
+              <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 text-center">
                 <div className="text-[11px] text-white/45 uppercase font-bold">Diffusion D(k)</div>
-                <div className="text-lg font-mono font-bold text-bone mt-1">
+                <div className="text-lg font-mono font-bold text-stone-900 mt-1">
                   {history.length > 0 ? history[history.length - 1].diffusion : d0}
                 </div>
               </div>
-              <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/10 text-center">
+              <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 text-center">
                 <div className="text-[11px] text-white/45 uppercase font-bold">OBL Jumps</div>
                 <div className="text-lg font-mono font-bold text-emerald-600 mt-1">
                   {oblTotalCount}
@@ -539,11 +545,11 @@ export const SDAOSimulator: React.FC = () => {
             </div>
 
             {selectedAlgo === 'SDAO' && (
-              <div className="p-4 bg-gold/10 rounded-xl border border-gold/30 text-xs text-bone leading-relaxed flex items-center justify-between">
+              <div className="p-4 bg-nobel-gold/10 rounded-xl border border-nobel-gold/30 text-xs text-stone-800 leading-relaxed flex items-center justify-between">
                 <div>
                   <strong>Bound Contraction Events:</strong> Search bounds contracted {boundContractionCount} times around x_Gbest (Every 10 iterations).
                 </div>
-                <span className="font-mono font-bold px-2 py-1 bg-white/[0.03] rounded border border-gold/40">
+                <span className="font-mono font-bold px-2 py-1 bg-white rounded border border-nobel-gold/40">
                   {currentBoundsRef.current[0].toFixed(1)} to {currentBoundsRef.current[1].toFixed(1)}
                 </span>
               </div>
@@ -551,6 +557,6 @@ export const SDAOSimulator: React.FC = () => {
           </div>
         </div>
       </div>
-    </Reveal>
+    </div>
   );
 };
