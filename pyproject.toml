@@ -21,7 +21,7 @@ dependencies = [
     # Lower bounds that pull in patched, non-vulnerable releases of
     # transitive dependencies (Pillow, Mako, fonttools) flagged by Dependabot.
     "pillow>=12.3.0",
-    "mako>=1.3.12",
+    "mako>=1.4.1",
     "fonttools>=4.60.2",
 ]
 
